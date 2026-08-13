@@ -31,6 +31,8 @@ public sealed class SunshineConfigWriterTests
         Assert.DoesNotContain("ensure_primary", conf);
         Assert.Contains("upnp = enabled", conf);
         Assert.Contains("credentials_file", conf);
+        Assert.Contains("pkey =", conf);
+        Assert.Contains("ignore_encoder_probe_failure = enabled", conf);
     }
 
     [Fact]

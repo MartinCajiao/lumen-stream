@@ -100,6 +100,31 @@ public static class HostProcess
         }
     }
 
+    public static void SweepZombies()
+    {
+        if (FindRunning() is not null && !IsListening())
+        {
+            StopAll();
+        }
+    }
+
+    public static async Task StopAllAndWaitAsync(CancellationToken token)
+    {
+        StopAll();
+        var until = DateTime.UtcNow + TimeSpan.FromSeconds(6);
+        while (DateTime.UtcNow < until)
+        {
+            token.ThrowIfCancellationRequested();
+            if (FindRunning() is null && !IsListening())
+            {
+                return;
+            }
+
+            StopAll();
+            await Task.Delay(300, token).ConfigureAwait(false);
+        }
+    }
+
     public static void StopAll()
     {
         if (OperatingSystem.IsWindows())

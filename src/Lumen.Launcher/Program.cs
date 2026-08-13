@@ -30,6 +30,7 @@ internal static class Program
                 return;
             }
 
+            HostProcess.SweepZombies();
             BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
         }
         catch (Exception ex)

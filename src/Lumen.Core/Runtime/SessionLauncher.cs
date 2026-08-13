@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using Lumen.Core.Client;
 using Lumen.Core.Host;
@@ -17,24 +18,29 @@ public static class SessionLauncher
         string? webUser,
         CancellationToken token)
     {
-        SunshineConfigWriter.Write(profile);
-        AppsJsonWriter.Write(profile);
-        HostProcess.StopAll();
-        await Task.Delay(400, token).ConfigureAwait(false);
-        await EnsureWebCredentialsAsync(binary, webUser, token).ConfigureAwait(false);
-
-        var start = HiddenStart(binary.Path, Quote(LumenPaths.HostConfigFile));
-        var process = Process.Start(start) ?? throw new InvalidOperationException("No se pudo arrancar el host.");
-        var up = await HostProcess.WaitUntilListeningAsync(profile.Wan.HostPort, TimeSpan.FromSeconds(20), token)
-            .ConfigureAwait(false);
-        if (!up)
+        Exception? last = null;
+        foreach (var attempt in HostLaunchPlan.Fallbacks(profile))
         {
-            var hint = LastLogHint();
-            throw new InvalidOperationException(
-                "Apollo arrancó y se cerró. " + (hint ?? "Mira logs\\host.log. Si Windows pide permiso para el driver, acéptalo."));
+            token.ThrowIfCancellationRequested();
+            try
+            {
+                var process = await TryStartOnceAsync(attempt, binary, webUser, token).ConfigureAwait(false);
+                if (process is not null)
+                {
+                    return process;
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                last = ex;
+            }
+
+            await HostProcess.StopAllAndWaitAsync(token).ConfigureAwait(false);
         }
 
-        return HostProcess.FindRunning() ?? process;
+        var hint = HostLogHint.FromFile(LumenPaths.HostLogFile);
+        throw last ?? new InvalidOperationException(
+            "Apollo arrancó y se cerró. " + (hint ?? "Mira logs\\host.log. Si Windows pide permiso para el driver, acéptalo."));
     }
 
     public static Process StartClient(StreamProfile profile, LocatedBinary binary, string? hostAddress = null)
@@ -46,12 +52,53 @@ public static class SessionLauncher
         return Process.Start(start) ?? throw new InvalidOperationException("No se pudo arrancar el cliente.");
     }
 
+    private static async Task<Process?> TryStartOnceAsync(
+        StreamProfile profile,
+        LocatedBinary binary,
+        string? webUser,
+        CancellationToken token)
+    {
+        SunshineConfigWriter.Write(profile);
+        AppsJsonWriter.Write(profile);
+        await HostProcess.StopAllAndWaitAsync(token).ConfigureAwait(false);
+        await EnsureWebCredentialsAsync(binary, webUser, token).ConfigureAwait(false);
+
+        var start = HiddenStart(binary.Path, Quote(LumenPaths.HostConfigFile));
+        var process = Process.Start(start) ?? throw new InvalidOperationException("No se pudo arrancar el host.");
+        var until = DateTime.UtcNow + TimeSpan.FromSeconds(28);
+        while (DateTime.UtcNow < until)
+        {
+            token.ThrowIfCancellationRequested();
+            if (HostProcess.IsListening(profile.Wan.HostPort))
+            {
+                return HostProcess.FindRunning() ?? process;
+            }
+
+            var alive = HostProcess.IsRunning(process) || HostProcess.FindRunning() is not null;
+            if (!alive)
+            {
+                var hint = HostLogHint.FromFile(LumenPaths.HostLogFile);
+                throw new InvalidOperationException(
+                    "Apollo arrancó y se cerró. " + (hint ?? "Mira logs\\host.log. Si Windows pide permiso para el driver, acéptalo."));
+            }
+
+            await Task.Delay(250, token).ConfigureAwait(false);
+        }
+
+        if (HostProcess.IsListening(profile.Wan.HostPort))
+        {
+            return HostProcess.FindRunning() ?? process;
+        }
+
+        return null;
+    }
+
     private static async Task EnsureWebCredentialsAsync(
         LocatedBinary binary,
         string? webUser,
         CancellationToken token)
     {
-        if (File.Exists(LumenPaths.HostCredentialsFile))
+        if (CredentialsLookOk())
         {
             return;
         }
@@ -66,7 +113,64 @@ public static class SessionLauncher
             return;
         }
 
-        await creds.WaitForExitAsync(token).ConfigureAwait(false);
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
+        timeout.CancelAfter(TimeSpan.FromSeconds(20));
+        try
+        {
+            await creds.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!token.IsCancellationRequested)
+        {
+            try
+            {
+                if (HostProcess.IsRunning(creds))
+                {
+                    if (OperatingSystem.IsWindows())
+                    {
+                        creds.Kill(entireProcessTree: true);
+                    }
+                    else
+                    {
+                        creds.Kill();
+                    }
+                }
+            }
+            catch (Win32Exception)
+            {
+            }
+            catch (InvalidOperationException)
+            {
+            }
+            catch (NotSupportedException)
+            {
+            }
+
+            await HostProcess.StopAllAndWaitAsync(token).ConfigureAwait(false);
+        }
+    }
+
+    private static bool CredentialsLookOk()
+    {
+        try
+        {
+            if (!File.Exists(LumenPaths.HostCredentialsFile))
+            {
+                return false;
+            }
+
+            var json = File.ReadAllText(LumenPaths.HostCredentialsFile);
+            return json.Contains("username", StringComparison.OrdinalIgnoreCase)
+                   && json.Contains("password", StringComparison.OrdinalIgnoreCase)
+                   && json.Contains("salt", StringComparison.OrdinalIgnoreCase);
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
     }
 
     private static ProcessStartInfo HiddenStart(string file, string args) => new()
@@ -93,23 +197,4 @@ public static class SessionLauncher
 
     private static string Quote(string value) =>
         value.Contains(' ', StringComparison.Ordinal) ? $"\"{value}\"" : value;
-
-    private static string? LastLogHint()
-    {
-        try
-        {
-            if (!File.Exists(LumenPaths.HostLogFile))
-            {
-                return null;
-            }
-
-            var lines = File.ReadLines(LumenPaths.HostLogFile).Reverse().Take(8).Reverse();
-            var text = string.Join(' ', lines);
-            return text.Length > 240 ? text[^240..] : text;
-        }
-        catch (IOException)
-        {
-            return null;
-        }
-    }
 }

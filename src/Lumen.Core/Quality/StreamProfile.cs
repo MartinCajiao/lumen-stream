@@ -24,6 +24,7 @@ public sealed record StreamProfile
     public bool NativePenTouch { get; init; } = true;
     public WanSettings Wan { get; init; } = WanSettings.Disabled;
     public string HostName { get; init; } = "Lumen";
+    public string AddressFamily { get; init; } = "both";
 
     public static StreamProfile From(LumenSettings settings, DisplayInfo display)
     {

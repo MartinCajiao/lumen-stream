@@ -33,6 +33,9 @@ public static class SunshineConfigWriter
             port = {profile.Wan.HostPort}
             file_state = {ToConfPath(LumenPaths.HostStateFile)}
             credentials_file = {ToConfPath(LumenPaths.HostCredentialsFile)}
+            pkey = {ToConfPath(LumenPaths.HostPkeyFile)}
+            cert = {ToConfPath(LumenPaths.HostCertFile)}
+            ignore_encoder_probe_failure = enabled
 
             # Advertise high-refresh so 144/165/240 are first-class, not hidden.
             fps = [30,60,90,120,144,165,240]
@@ -67,16 +70,36 @@ public static class SunshineConfigWriter
             high_resolution_scrolling = enabled
 
             upnp = {upnp}
-            address_family = both
+            address_family = {(string.IsNullOrWhiteSpace(profile.AddressFamily) ? "both" : profile.AddressFamily)}
             lan_encryption_mode = 0
             wan_encryption_mode = {wanEnc}
             {external}# monitors requested by Lumen: {profile.MonitorCount} (see lumen-displays.json + apps.json)
             """;
     }
 
+    public static void EnsureStateFile()
+    {
+        LumenPaths.EnsureLayout();
+        if (StateFileLooksOk())
+        {
+            return;
+        }
+
+        var id = Guid.NewGuid().ToString();
+        File.WriteAllText(LumenPaths.HostStateFile, $$"""
+            {
+              "root": {
+                "uniqueid": "{{id}}",
+                "named_devices": []
+              }
+            }
+            """);
+    }
+
     public static void Write(StreamProfile profile)
     {
         LumenPaths.EnsureLayout();
+        EnsureStateFile();
         File.WriteAllText(LumenPaths.HostConfigFile, Render(profile));
         File.WriteAllText(LumenPaths.DisplaysFile, JsonSerializer.Serialize(new
         {
@@ -90,4 +113,26 @@ public static class SunshineConfigWriter
     }
 
     private static string ToConfPath(string path) => path.Replace('\\', '/');
+
+    private static bool StateFileLooksOk()
+    {
+        try
+        {
+            if (!File.Exists(LumenPaths.HostStateFile))
+            {
+                return false;
+            }
+
+            var json = File.ReadAllText(LumenPaths.HostStateFile);
+            return json.Contains("uniqueid", StringComparison.OrdinalIgnoreCase);
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
 }

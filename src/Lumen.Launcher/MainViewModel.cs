@@ -24,6 +24,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private CancellationTokenSource? _announceCts;
     private Process? _hostProcess;
     private bool _shareOn;
+    private bool _relaunchBusy;
+    private int _relaunchs;
+    private int _shareEpoch;
     private readonly AccountStore _accounts = new();
     private string _status = "";
     private string _loginUser = "";
@@ -237,11 +240,13 @@ public sealed class MainViewModel : INotifyPropertyChanged
         Stats = _logTail.ToStats(CurrentProfile);
         OnPropertyChanged(nameof(OverlayLine));
         OnPropertyChanged(nameof(OverlayWarning));
-        if (_shareOn && !HostProcess.IsLive() && !HostProcess.IsRunning(_hostProcess))
+        if (_shareOn && HostProcess.IsLive())
         {
-            _shareOn = false;
-            Status = "Se dejó de compartir. Pulsa Compartir otra vez.";
-            RebuildComputers();
+            _relaunchs = 0;
+        }
+        else if (_shareOn && !_relaunchBusy && !HostProcess.IsLive() && !HostProcess.IsRunning(_hostProcess))
+        {
+            _ = KeepShareAliveAsync();
         }
 
         OnPropertyChanged(nameof(IsSharing));
@@ -373,6 +378,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public async Task StartHostAsync()
     {
+        var epoch = _shareEpoch;
         ApplyConfigsQuiet();
         RefreshBinaries();
         if (HostBinary is null)
@@ -385,6 +391,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
         {
             Status = "Abriendo internet para que puedan entrar de fuera…";
             var stun = await StunClient.QueryPublicIpv4Async(CancellationToken.None).ConfigureAwait(true);
+            if (epoch != _shareEpoch)
+            {
+                return;
+            }
+
             if (!string.IsNullOrWhiteSpace(stun))
             {
                 _publicIp = stun;
@@ -392,16 +403,32 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 LumenSettingsStore.Save(_settings);
             }
 
-            Status = "Este PC se está transformando en el stream…";
+            Status = _relaunchBusy
+                ? "Apollo se cerró. Lo vuelvo a abrir…"
+                : "Este PC se está transformando en el stream…";
             _hostProcess = await SessionLauncher.StartHostAsync(
                     CurrentProfile,
                     HostBinary,
                     _settings.Username,
                     CancellationToken.None)
                 .ConfigureAwait(true);
+            if (epoch != _shareEpoch)
+            {
+                HostProcess.StopAll();
+                _hostProcess = null;
+                return;
+            }
+
             BeginAnnounce();
             var wan = await WanBootstrap.OpenAsync(HostBinary.Path, CurrentProfile.Wan.HostPort, CancellationToken.None)
                 .ConfigureAwait(true);
+            if (epoch != _shareEpoch)
+            {
+                HostProcess.StopAll();
+                _hostProcess = null;
+                return;
+            }
+
             _shareCode = wan.Address;
             if (!string.IsNullOrWhiteSpace(wan.PublicIpv4))
             {
@@ -410,6 +437,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
             _ = RefreshPublicIpAsync();
             _shareOn = true;
+            _relaunchs = 0;
             Status = wan.Method == "Esta wifi"
                 ? $"Listo en esta wifi. Código: {wan.Address}. Si el otro está en otra casa, puede no entrar."
                 : $"Listo a distancia. En el otro PC escribe {wan.Address} y pulsa Añadir, o Conectar si ya sale.";
@@ -417,16 +445,38 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
         catch (Exception ex)
         {
+            if (epoch != _shareEpoch)
+            {
+                return;
+            }
+
             _hostProcess = HostProcess.FindRunning();
-            _shareOn = HostProcess.IsLive();
-            Status = _shareOn ? "Listo. En el otro PC pulsa Conectar." : ex.Message;
+            var live = HostProcess.IsLive();
+            if (live)
+            {
+                _shareOn = true;
+                Status = "Listo. En el otro PC pulsa Conectar.";
+            }
+            else if (_relaunchBusy)
+            {
+                Status = "Apollo se cerró. Lo vuelvo a abrir…";
+            }
+            else
+            {
+                _shareOn = false;
+                Status = ex.Message;
+            }
+
             NotifyShare();
         }
     }
 
     public void StopHost()
     {
+        _shareEpoch++;
         _shareOn = false;
+        _relaunchBusy = false;
+        _relaunchs = 0;
         _shareCode = "";
         _announceCts?.Cancel();
         HostProcess.StopAll();
@@ -654,6 +704,34 @@ public sealed class MainViewModel : INotifyPropertyChanged
             ? "Listo."
             : "No se pudo preparar. Cierra el antivirus un momento y reintenta.";
         return hostOk && clientOk;
+    }
+
+    private async Task KeepShareAliveAsync()
+    {
+        if (_relaunchBusy || !_shareOn)
+        {
+            return;
+        }
+
+        if (_relaunchs >= 8)
+        {
+            _shareOn = false;
+            Status = "Apollo se cerró varias veces. Pulsa Compartir otra vez.";
+            NotifyShare();
+            return;
+        }
+
+        _relaunchBusy = true;
+        _relaunchs++;
+        try
+        {
+            Status = "Apollo se cerró. Lo vuelvo a abrir…";
+            await StartHostAsync().ConfigureAwait(true);
+        }
+        finally
+        {
+            _relaunchBusy = false;
+        }
     }
 
     private void AdoptRunningHost()

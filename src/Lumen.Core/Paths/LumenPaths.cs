@@ -16,6 +16,9 @@ public static class LumenPaths
     public static string HostAppsFile => Path.Combine(HostConfigDir, "apps.json");
     public static string HostStateFile => Path.Combine(HostConfigDir, "sunshine_state.json");
     public static string HostCredentialsFile => Path.Combine(HostConfigDir, "credentials.json");
+    public static string HostCertDir => Path.Combine(HostConfigDir, "credentials");
+    public static string HostPkeyFile => Path.Combine(HostCertDir, "cakey.pem");
+    public static string HostCertFile => Path.Combine(HostCertDir, "cacert.pem");
     public static string HostLogFile => Path.Combine(Root, "logs", "host.log");
     public static string WanFile => Path.Combine(Root, "wan.json");
     public static string DisplaysFile => Path.Combine(Root, "lumen-displays.json");
@@ -26,6 +29,7 @@ public static class LumenPaths
     {
         Directory.CreateDirectory(Root);
         Directory.CreateDirectory(HostConfigDir);
+        Directory.CreateDirectory(HostCertDir);
         Directory.CreateDirectory(DepsDir);
         Directory.CreateDirectory(Path.GetDirectoryName(HostLogFile)!);
     }
