@@ -1,0 +1,22 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="Lumen Stream" Manufacturer="Lumen Stream" Version="1.0.0"
+           UpgradeCode="a7c3e1d0-9b24-4f11-8c5a-6e2d1b0a9f33" Scope="perUser">
+    <MajorUpgrade DowngradeErrorMessage="A newer version is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="INSTALLFOLDER" Name="Lumen">
+        <Component Id="LumenApp" Guid="b8d4f2e1-0c35-4a22-9d6b-7f3e2c1b0a44">
+          <File Source="$(LumenDir)\Lumen.exe" KeyPath="yes" />
+          <Shortcut Name="Lumen" Directory="ProgramMenuFolder" Advertise="no" WorkingDirectory="INSTALLFOLDER" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+    <Feature Id="Main">
+      <ComponentRef Id="LumenApp" />
+    </Feature>
+    <CustomAction Id="InstallDeps" FileRef="Lumen.exe" ExeCommand="--install-deps" Execute="deferred" Impersonate="yes" Return="ignore" />
+    <InstallExecuteSequence>
+      <Custom Action="InstallDeps" After="InstallFiles" Condition="NOT Installed" />
+    </InstallExecuteSequence>
+  </Package>
+</Wix>

@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Lumen.Core</RootNamespace>
+    <AssemblyName>Lumen.Core</AssemblyName>
+    <Description>Host/client config, Hz presets, overlay stats, and WAN settings for Lumen Stream.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
+  </ItemGroup>
+</Project>

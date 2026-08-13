@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Lumen-Setup</AssemblyName>
+    <RootNamespace>Lumen.Setup</RootNamespace>
+    <Description>Installs Lumen plus Apollo and Moonlight, then creates a shortcut.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Lumen.Core\Lumen.Core.csproj" />
+  </ItemGroup>
+</Project>

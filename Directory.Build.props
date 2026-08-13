@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <LangVersion>latest</LangVersion>
+    <Company>Lumen Stream</Company>
+    <Product>Lumen Stream</Product>
+    <Copyright>Copyright (C) 2026 Lumen Stream contributors</Copyright>
+  </PropertyGroup>
+</Project>

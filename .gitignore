@@ -1,0 +1,29 @@
+# Build
+bin/
+obj/
+artifacts/
+dist/
+*.user
+*.suo
+*.pdb
+*.exe
+
+# IDE
+.vs/
+.idea/
+*.swp
+*~
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Logs / local config
+*.log
+AppData/
+
+# Submodule build trees
+host/build/
+client/build/
+vendor/

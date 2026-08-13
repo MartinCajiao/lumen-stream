@@ -1,0 +1,6 @@
+[submodule "host"]
+	path = host
+	url = https://github.com/ClassicOldSong/Apollo.git
+[submodule "client"]
+	path = client
+	url = https://github.com/moonlight-stream/moonlight-qt.git

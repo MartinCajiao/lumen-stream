@@ -1,0 +1,42 @@
+diff --git a/app/gui/SettingsView.qml b/app/gui/SettingsView.qml
+index 0000000..1111111 100644
+--- a/app/gui/SettingsView.qml
++++ b/app/gui/SettingsView.qml
+@@ -639,6 +639,7 @@
+                         model: ListModel {
+                             id: fpsListModel
+-                            // Other elements may be added at runtime
++                            // Lumen: high-refresh is first-class, not hidden behind "unsupported FPS".
+                             ListElement {
+                                 text: qsTr("30 FPS")
+                                 video_fps: "30"
+@@ -649,6 +650,30 @@
+                                 video_fps: "60"
+                                 is_custom: false
+                             }
++                            ListElement {
++                                text: qsTr("90 FPS")
++                                video_fps: "90"
++                                is_custom: false
++                            }
++                            ListElement {
++                                text: qsTr("120 FPS")
++                                video_fps: "120"
++                                is_custom: false
++                            }
++                            ListElement {
++                                text: qsTr("144 FPS")
++                                video_fps: "144"
++                                is_custom: false
++                            }
++                            ListElement {
++                                text: qsTr("165 FPS")
++                                video_fps: "165"
++                                is_custom: false
++                            }
++                            ListElement {
++                                text: qsTr("240 FPS")
++                                video_fps: "240"
++                                is_custom: false
++                            }
+                         }

@@ -1,0 +1,97 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Lumen.Launcher"
+        x:Class="Lumen.Launcher.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="Lumen"
+        Width="720"
+        Height="640"
+        MinWidth="560"
+        MinHeight="480"
+        WindowStartupLocation="CenterScreen">
+
+  <Panel>
+    <Border Background="{StaticResource Bg}" IsVisible="{Binding !IsLoggedIn}">
+      <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="340" Spacing="14">
+        <TextBlock Text="Lumen" FontSize="36" FontWeight="Bold" HorizontalAlignment="Center"/>
+        <TextBlock Text="{Binding AuthTitle}" FontSize="18" HorizontalAlignment="Center" Foreground="#FFB3D9"/>
+        <TextBlock Text="Solo usuario y contraseña." Foreground="{StaticResource Muted}" HorizontalAlignment="Center"/>
+        <TextBox Watermark="usuario" Text="{Binding LoginUser}" FontSize="16"/>
+        <TextBox Watermark="contraseña" Text="{Binding LoginPassword}" PasswordChar="•" FontSize="16"/>
+        <TextBox Watermark="repite la contraseña" Text="{Binding LoginPasswordConfirm}" PasswordChar="•" FontSize="16"
+                 IsVisible="{Binding AuthIsCreate}"/>
+        <Button Classes="pink" Content="{Binding AuthButton}" Click="OnSubmitAuth" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+        <Button Classes="ghost" Content="{Binding AuthSwitch}" Click="OnToggleAuth" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+        <TextBlock Text="{Binding Status}" Foreground="#FFB3D9" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+      </StackPanel>
+    </Border>
+
+    <DockPanel IsVisible="{Binding IsLoggedIn}">
+      <Grid DockPanel.Dock="Top" Margin="24,20,24,8" ColumnDefinitions="*,Auto">
+        <StackPanel>
+          <TextBlock Text="Lumen" FontSize="26" FontWeight="SemiBold"/>
+          <TextBlock Text="{Binding Greeting}" Foreground="{StaticResource Muted}"/>
+        </StackPanel>
+        <Button Grid.Column="1" Classes="ghost" Content="Cerrar sesión" Click="OnLogout" VerticalAlignment="Center"/>
+      </Grid>
+
+      <TextBlock DockPanel.Dock="Bottom" Text="{Binding Status}" Margin="24,8,24,16" Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
+
+      <ScrollViewer Padding="24,8,24,8">
+        <StackPanel Spacing="16">
+          <TextBlock Text="1. En este PC pulsa Compartir.&#x0a;2. En el otro PC pulsa Conectar."
+                     TextWrapping="Wrap" FontSize="16"/>
+
+          <Button Classes="pink" Content="{Binding ShareLabel}" Click="OnShare"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                  FontSize="18" Padding="20,14"
+                  IsEnabled="{Binding !IsInstalling}"/>
+
+          <Border IsVisible="{Binding IsSharing}" Background="{StaticResource Card}" CornerRadius="14" Padding="16">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Este PC ya es el stream" FontWeight="SemiBold" Foreground="#3DFF9A" FontSize="18"/>
+              <TextBlock Text="En el otro Lumen pulsa Conectar. Desde otra casa, escribe este código:" TextWrapping="Wrap"/>
+              <TextBlock Text="{Binding ShareCode}" FontSize="28" FontWeight="Bold"/>
+              <TextBlock Text="Si el otro PC muestra un PIN, escríbelo aquí:" Foreground="{StaticResource Muted}"/>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBox Width="160" Watermark="PIN" Text="{Binding Pin}" FontSize="18"/>
+                <Button Classes="purple" Content="Listo" Click="OnPair"/>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <TextBlock Text="Otros PCs" FontSize="18" FontWeight="SemiBold" Margin="0,8,0,0"/>
+
+          <ItemsControl ItemsSource="{Binding Computers}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:ComputerItem">
+                <Border Background="{StaticResource Card}" CornerRadius="14" Padding="16" Margin="0,0,0,10">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel>
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold"/>
+                        <Border CornerRadius="8" Padding="8,2" Background="#3A255C">
+                          <TextBlock Text="{Binding Badge}" FontSize="12"/>
+                        </Border>
+                      </StackPanel>
+                      <TextBlock Text="{Binding Subtitle}" Foreground="{StaticResource Muted}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Classes="pink" Content="Conectar" Tag="{Binding}" Click="OnConnectCard"
+                            IsVisible="{Binding ShowConnect}" VerticalAlignment="Center"/>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <TextBlock Text="¿No aparece el otro PC?" FontWeight="SemiBold"/>
+          <TextBlock Text="Pega el código que le sale al compartir y pulsa Añadir." Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBox Width="240" Watermark="código o IP" Text="{Binding RemoteAddress}"/>
+            <Button Classes="purple" Content="Añadir" Click="OnAddRemote"/>
+          </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
+    </DockPanel>
+  </Panel>
+</Window>

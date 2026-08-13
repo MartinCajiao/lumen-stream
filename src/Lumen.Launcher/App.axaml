@@ -1,0 +1,54 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Lumen.Launcher.App"
+             RequestedThemeVariant="Dark">
+  <Application.Resources>
+    <SolidColorBrush x:Key="Bg" Color="#140C22"/>
+    <SolidColorBrush x:Key="Panel" Color="#1F1433"/>
+    <SolidColorBrush x:Key="Card" Color="#2A1B45"/>
+    <SolidColorBrush x:Key="Pink" Color="#FF4DA6"/>
+    <SolidColorBrush x:Key="Purple" Color="#8B5CFF"/>
+    <SolidColorBrush x:Key="Blue" Color="#4D8CFF"/>
+    <SolidColorBrush x:Key="Text" Color="#F7F1FF"/>
+    <SolidColorBrush x:Key="Muted" Color="#B9A8D4"/>
+  </Application.Resources>
+  <Application.Styles>
+    <FluentTheme />
+    <Style Selector="Window">
+      <Setter Property="Background" Value="{StaticResource Bg}"/>
+      <Setter Property="Foreground" Value="{StaticResource Text}"/>
+      <Setter Property="FontFamily" Value="Inter, Segoe UI"/>
+    </Style>
+    <Style Selector="TextBox">
+      <Setter Property="Background" Value="#24183A"/>
+      <Setter Property="Foreground" Value="{StaticResource Text}"/>
+      <Setter Property="BorderBrush" Value="#6B4D9A"/>
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="Padding" Value="12,10"/>
+    </Style>
+    <Style Selector="Button.pink">
+      <Setter Property="Background" Value="{StaticResource Pink}"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="Padding" Value="18,10"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="Button.purple">
+      <Setter Property="Background" Value="{StaticResource Purple}"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="Padding" Value="14,8"/>
+    </Style>
+    <Style Selector="Button.ghost">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+      <Setter Property="BorderBrush" Value="#6B4D9A"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="Padding" Value="14,8"/>
+    </Style>
+    <Style Selector="Button:pointerover /template/ ContentPresenter">
+      <Setter Property="Opacity" Value="0.92"/>
+    </Style>
+  </Application.Styles>
+</Application>
