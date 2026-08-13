@@ -36,6 +36,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private string _pin = "";
     private string _remoteAddress = "";
     private string _publicIp = "";
+    private string _shareCode = "";
     private string _wanMethod = "Esta wifi";
     private bool _pairingBusy;
     private bool _showShareOptions;
