@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Lumen — streaming de PC a PC, gratis</title>
+  <meta name="description" content="Lumen es open source (GPL-3.0). Usa Apollo y Moonlight. Gratis. No es Parsec."/>
+  <meta property="og:title" content="Lumen — streaming de PC a PC, gratis"/>
+  <meta property="og:description" content="Open source. Apollo + Moonlight. Una app simple para compartir el PC."/>
+  <meta property="og:type" content="website"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #07050f;
+      --ink: #f6f1ff;
+      --muted: #9d8fb8;
+      --pink: #ff4da6;
+      --violet: #8b5cff;
+      --blue: #4d8cff;
+      --card: #161022;
+      --line: rgba(255,255,255,.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: var(--bg); color: var(--ink); font-family: Outfit, system-ui, sans-serif; }
+    body {
+      min-height: 100vh;
+      background-image:
+        radial-gradient(900px 420px at 12% -10%, rgba(255,77,166,.22), transparent 55%),
+        radial-gradient(800px 480px at 110% 8%, rgba(77,140,255,.16), transparent 50%),
+        radial-gradient(700px 500px at 50% 120%, rgba(139,92,255,.12), transparent 45%);
+    }
+    a { color: inherit; }
+    .wrap { width: min(1080px, calc(100% - 40px)); margin: 0 auto; }
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 22px 0 8px; gap: 16px;
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .04em; }
+    .mark {
+      width: 28px; height: 28px; border-radius: 9px;
+      background: linear-gradient(135deg, var(--pink), var(--violet) 55%, var(--blue));
+    }
+    nav ul { display: flex; gap: 22px; list-style: none; color: var(--muted); font-size: 14px; }
+    .lang { display: flex; gap: 6px; }
+    .lang button {
+      background: transparent; color: var(--muted); border: 1px solid var(--line);
+      border-radius: 999px; padding: 6px 10px; cursor: pointer; font: inherit;
+    }
+    .lang button.on { color: var(--ink); border-color: rgba(255,77,166,.5); }
+    .hero { padding: 72px 0 36px; display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; }
+    h1 {
+      font-family: "Instrument Serif", Georgia, serif;
+      font-size: clamp(44px, 7vw, 84px); line-height: .92; font-weight: 400;
+    }
+    h1 em { font-style: italic; color: #ffb3d9; }
+    .lede { margin-top: 22px; color: var(--muted); font-size: 18px; max-width: 46ch; line-height: 1.55; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 999px; padding: 14px 22px; text-decoration: none; font-weight: 600;
+      border: 1px solid transparent;
+    }
+    .btn.pink { background: var(--pink); color: #fff; }
+    .btn.ghost { border-color: var(--line); color: var(--ink); }
+    .fine { margin-top: 14px; color: var(--muted); font-size: 13px; }
+    .window {
+      background: var(--card); border: 1px solid var(--line); border-radius: 22px;
+      padding: 18px; box-shadow: 0 40px 80px rgba(0,0,0,.35);
+    }
+    .dots { display: flex; gap: 6px; margin-bottom: 16px; }
+    .dots i { width: 8px; height: 8px; border-radius: 50%; background: #3a2a55; display: block; }
+    .dots i:first-child { background: var(--pink); }
+    .step { font-size: 13px; color: var(--muted); margin-bottom: 14px; line-height: 1.45; }
+    .big {
+      width: 100%; border: 0; border-radius: 14px; padding: 16px;
+      background: linear-gradient(90deg, var(--pink), #ff7ac0); color: #fff;
+      font: 700 16px Outfit, sans-serif;
+    }
+    .share {
+      margin-top: 14px; background: #110c1c; border-radius: 14px; padding: 14px;
+      border: 1px solid rgba(61,255,154,.18);
+    }
+    .share b { color: #3dff9a; display: block; margin-bottom: 6px; }
+    .code { font-size: 28px; font-weight: 700; letter-spacing: .04em; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; padding: 28px 0 10px; }
+    .card {
+      background: rgba(22,16,34,.72); border: 1px solid var(--line);
+      border-radius: 18px; padding: 20px; min-height: 150px;
+    }
+    .card h3 { font-size: 16px; margin-bottom: 8px; }
+    .card p { color: var(--muted); font-size: 14px; line-height: 1.5; }
+    section { padding: 42px 0; }
+    h2 { font-family: "Instrument Serif", Georgia, serif; font-size: 40px; font-weight: 400; margin-bottom: 16px; }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .ok, .no {
+      border-radius: 18px; padding: 22px; border: 1px solid var(--line); background: var(--card);
+    }
+    .ok h3 { color: #3dff9a; margin-bottom: 10px; }
+    .no h3 { color: #ff8ab8; margin-bottom: 10px; }
+    .ok li, .no li { margin: 8px 0 8px 18px; color: var(--muted); }
+    .dl {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    }
+    .dl a {
+      display: block; background: var(--card); border: 1px solid var(--line);
+      border-radius: 18px; padding: 22px; text-decoration: none;
+    }
+    .dl a strong { display: block; font-size: 18px; margin-bottom: 6px; }
+    .dl a span { color: var(--muted); font-size: 14px; }
+    textarea {
+      width: 100%; min-height: 150px; resize: vertical; background: #110c1c; color: var(--ink);
+      border: 1px solid var(--line); border-radius: 14px; padding: 14px; font: 14px/1.45 Outfit, sans-serif;
+    }
+    .copy { margin-top: 8px; }
+    footer { color: var(--muted); font-size: 13px; padding: 28px 0 48px; border-top: 1px solid var(--line); }
+    footer a { color: #d7c6ff; }
+    @media (max-width: 860px) {
+      .hero, .grid, .split, .dl { grid-template-columns: 1fr; }
+      nav ul { display: none; }
+      h1 { font-size: 52px; }
+    }
+    [data-lang="en"] [data-es], [data-lang="es"] [data-en] { display: none; }
+  </style>
+</head>
+<body data-lang="es">
+  <div class="wrap">
+    <nav>
+      <div class="brand"><span class="mark"></span> LUMEN</div>
+      <ul>
+        <li><a href="#uso" data-es>Uso</a><a href="#uso" data-en>Use</a></li>
+        <li><a href="#limites" data-es>Límites</a><a href="#limites" data-en>Limits</a></li>
+        <li><a href="#bajar" data-es>Descargar</a><a href="#bajar" data-en>Download</a></li>
+      </ul>
+      <div class="lang">
+        <button type="button" class="on" id="btn-es">ES</button>
+        <button type="button" id="btn-en">EN</button>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div>
+        <h1 data-es>El PC gamer,<br><em>en el otro PC.</em></h1>
+        <h1 data-en>Your gaming PC,<br><em>on the other PC.</em></h1>
+        <p class="lede" data-es>Gratis. Open source (GPL-3.0). Una app simple encima de Apollo y Moonlight. Se parece a Parsec en el uso. No es Parsec: otro protocolo, sin servidores de pago en el medio.</p>
+        <p class="lede" data-en>Free. Open source (GPL-3.0). A simple app on top of Apollo and Moonlight. Feels a bit like Parsec. It isn’t Parsec: different protocol, no paid relay network.</p>
+        <div class="actions">
+          <a class="btn pink" href="https://github.com/MartinCajiao/lumen-stream/releases/latest/download/Lumen.exe" data-es>Descargar Lumen.exe</a>
+          <a class="btn pink" href="https://github.com/MartinCajiao/lumen-stream/releases/latest/download/Lumen.exe" data-en>Download Lumen.exe</a>
+          <a class="btn ghost" href="https://github.com/MartinCajiao/lumen-stream" data-es>Ver el código</a>
+          <a class="btn ghost" href="https://github.com/MartinCajiao/lumen-stream" data-en>Source code</a>
+        </div>
+        <p class="fine" data-es>Windows x64. Sin cuenta de email. El instalador (Setup) deja Apollo y Moonlight la primera vez.</p>
+        <p class="fine" data-en>Windows x64. No email account. Setup installs Apollo and Moonlight the first time.</p>
+      </div>
+      <div class="window" aria-hidden="true">
+        <div class="dots"><i></i><i></i><i></i></div>
+        <p class="step" data-es>1. En este PC pulsa Compartir.<br>2. En el otro PC pulsa Conectar.</p>
+        <p class="step" data-en>1. On this PC click Share.<br>2. On the other PC click Connect.</p>
+        <button class="big" type="button" tabindex="-1" data-es>Compartir este PC</button>
+        <button class="big" type="button" tabindex="-1" data-en>Share this PC</button>
+        <div class="share">
+          <b data-es>Este PC ya es el stream</b>
+          <b data-en>This PC is the stream now</b>
+          <div class="code">203.0.113.8</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <article class="card">
+        <h3 data-es>Sin email</h3><h3 data-en>No email</h3>
+        <p data-es>Usuario y contraseña. Local, en tu máquina.</p>
+        <p data-en>Username and password. Stored on your machine.</p>
+      </article>
+      <article class="card">
+        <h3 data-es>Hz reales</h3><h3 data-en>Real refresh</h3>
+        <p data-es>El host crea un monitor virtual al Hz que pides. Si tu panel es 60 Hz, se ve a 60.</p>
+        <p data-en>The host makes a virtual display at the Hz you ask. If your panel is 60 Hz, you get 60.</p>
+      </article>
+      <article class="card">
+        <h3>GPL-3.0</h3>
+        <p data-es>El código está. Apollo y Moonlight también son GPL. Puedes auditarlo y forkearlo.</p>
+        <p data-en>The code is public. Apollo and Moonlight are GPL too. Audit it, fork it.</p>
+      </article>
+    </div>
+
+    <section id="uso">
+      <h2 data-es>Cómo se usa</h2>
+      <h2 data-en>How to use it</h2>
+      <div class="split">
+        <div class="ok">
+          <h3 data-es>PC gamer</h3><h3 data-en>Host PC</h3>
+          <ol>
+            <li data-es>Abre Lumen.exe (o Setup la primera vez).</li>
+            <li data-en>Open Lumen.exe (or Setup the first time).</li>
+            <li data-es>Entra con un usuario.</li>
+            <li data-en>Sign in with a username.</li>
+            <li data-es>Pulsa Compartir este PC.</li>
+            <li data-en>Click Share this PC.</li>
+          </ol>
+        </div>
+        <div class="ok">
+          <h3 data-es>El otro PC</h3><h3 data-en>The other PC</h3>
+          <ol>
+            <li data-es>Misma wifi: pulsa Conectar.</li>
+            <li data-en>Same wifi: click Connect.</li>
+            <li data-es>Otra casa: pega el código (IP) y Añadir.</li>
+            <li data-en>Elsewhere: paste the code (IP) and Add.</li>
+            <li data-es>Si sale un PIN, lo escribes en el host.</li>
+            <li data-en>If a PIN appears, type it on the host.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section id="limites">
+      <h2 data-es>Qué hace y qué no</h2>
+      <h2 data-en>What it does and what it doesn’t</h2>
+      <div class="split">
+        <div class="ok">
+          <h3 data-es>Va</h3><h3 data-en>Works</h3>
+          <ul>
+            <li data-es>Misma red, con un clic.</li>
+            <li data-en>Same LAN, one click.</li>
+            <li data-es>Monitor virtual, 4:4:4 en LAN, lápiz.</li>
+            <li data-en>Virtual display, 4:4:4 on LAN, pen.</li>
+            <li data-es>Otra red si el router abre puertos (UPnP) o si las dos tienen Tailscale.</li>
+            <li data-en>Remote if UPnP opens ports, or both PCs run Tailscale.</li>
+          </ul>
+        </div>
+        <div class="no">
+          <h3 data-es>No va (aún / nunca así)</h3><h3 data-en>Doesn’t (yet / by design)</h3>
+          <ul>
+            <li data-es>No hay relay mundial de pago tipo Parsec. Si tu ISP es CGNAT, la IP pública no basta.</li>
+            <li data-en>No paid global relay like Parsec. CGNAT ISPs won’t expose you with just a public IP.</li>
+            <li data-es>No es el protocolo de Parsec. Es GameStream.</li>
+            <li data-en>Not Parsec’s protocol. It’s GameStream.</li>
+            <li data-es>Linux/macOS cliente: usa Moonlight; este launcher es Windows.</li>
+            <li data-en>Linux/macOS clients: use Moonlight; this launcher is Windows.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="bajar">
+      <h2 data-es>Descarga</h2>
+      <h2 data-en>Download</h2>
+      <div class="dl">
+        <a href="https://github.com/MartinCajiao/lumen-stream/releases/latest/download/Lumen.exe">
+          <strong>Lumen.exe</strong>
+          <span data-es>App portable. Ábrela en los dos PCs. Windows x64.</span>
+          <span data-en>Portable app. Open it on both PCs. Windows x64.</span>
+        </a>
+        <a href="https://github.com/MartinCajiao/lumen-stream/releases/latest/download/Lumen-Setup.exe">
+          <strong>Lumen-Setup.exe</strong>
+          <span data-es>Opcional. Instala Apollo y Moonlight la primera vez.</span>
+          <span data-en>Optional. Installs Apollo and Moonlight the first time.</span>
+        </a>
+      </div>
+      <p class="fine" data-es>Windows Defender a veces marca Apollo. Es un tema conocido de ellos: Más información → Ejecutar de todas formas.</p>
+      <p class="fine" data-en>Windows Defender sometimes flags Apollo. Known issue on their side: More info → Run anyway.</p>
+    </section>
+
+    <section id="foros">
+      <h2 data-es>Para pegar en foros</h2>
+      <h2 data-en>For forums</h2>
+      <p class="lede" data-es>Texto corto, sin humo. Mejor en r/selfhosted, r/MoonlightStreaming, r/opensource. No lo sueltes como anuncio en foros de Parsec: lo van a borrar.</p>
+      <p class="lede" data-en>Short, no hype. r/selfhosted, r/MoonlightStreaming, r/opensource. Don’t drop it as an ad on Parsec’s own forums — they’ll remove it.</p>
+      <p style="margin:16px 0 8px;color:var(--muted)" data-es>Español</p>
+      <p style="margin:16px 0 8px;color:var(--muted)" data-en>Spanish</p>
+      <textarea id="post-es" readonly>Lumen: streaming de PC a PC, gratis y open source (GPL-3.0).
+
+Es un launcher de Windows encima de Apollo (host) y Moonlight (cliente). Uso tipo Parsec: usuario (sin email), Compartir / Conectar. No es Parsec ni usa su protocolo; es GameStream.
+
+Sitio: https://martincajiao.github.io/lumen-stream/
+Código: https://github.com/MartinCajiao/lumen-stream
+Descarga: https://github.com/MartinCajiao/lumen-stream/releases/latest
+
+Límites: en la misma wifi va fino. A distancia hace falta UPnP o Tailscale. No hay relay mundial de pago.</textarea>
+      <button class="btn ghost copy" type="button" data-copy="post-es" data-es>Copiar</button>
+      <button class="btn ghost copy" type="button" data-copy="post-es" data-en>Copy</button>
+      <p style="margin:22px 0 8px;color:var(--muted)">English</p>
+      <textarea id="post-en" readonly>Lumen: PC-to-PC streaming, free and open source (GPL-3.0).
+
+Windows launcher on top of Apollo (host) and Moonlight (client). Parsec-like UX: username (no email), Share / Connect. Not Parsec and not Parsec’s protocol — it’s GameStream.
+
+Site: https://martincajiao.github.io/lumen-stream/
+Code: https://github.com/MartinCajiao/lumen-stream
+Download: https://github.com/MartinCajiao/lumen-stream/releases/latest
+
+Limits: LAN works. Over the internet you need UPnP or Tailscale. There is no paid global relay.</textarea>
+      <button class="btn ghost copy" type="button" data-copy="post-en" data-es>Copiar</button>
+      <button class="btn ghost copy" type="button" data-copy="post-en" data-en>Copy</button>
+    </section>
+
+    <footer>
+      <p>Lumen Stream · GPL-3.0-or-later · Apollo (ClassicOldSong) · Moonlight (moonlight-stream)</p>
+      <p style="margin-top:8px"><a href="https://github.com/MartinCajiao/lumen-stream">github.com/MartinCajiao/lumen-stream</a></p>
+    </footer>
+  </div>
+  <script>
+    const root = document.body;
+    const es = document.getElementById("btn-es");
+    const en = document.getElementById("btn-en");
+    const set = (lang) => {
+      root.dataset.lang = lang;
+      es.classList.toggle("on", lang === "es");
+      en.classList.toggle("on", lang === "en");
+    };
+    es.onclick = () => set("es");
+    en.onclick = () => set("en");
+    document.querySelectorAll("[data-copy]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-copy");
+        const node = document.getElementById(id);
+        await navigator.clipboard.writeText(node.value);
+        btn.textContent = root.dataset.lang === "en" ? "Copied" : "Copiado";
+      });
+    });
+  </script>
+</body>
+</html>
