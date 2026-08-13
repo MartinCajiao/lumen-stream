@@ -43,12 +43,34 @@ public static class SessionLauncher
             "Apollo arrancó y se cerró. " + (hint ?? "Mira logs\\host.log. Si Windows pide permiso para el driver, acéptalo."));
     }
 
-    public static Process StartClient(StreamProfile profile, LocatedBinary binary, string? hostAddress = null)
+    public static Process StartClient(
+        StreamProfile profile,
+        LocatedBinary binary,
+        string? hostAddress = null,
+        bool pairOnly = false)
     {
         ClientSettingsApplier.Apply(profile);
-        var args = string.IsNullOrWhiteSpace(hostAddress) ? "" : $"stream {MoonlightHost(hostAddress)} Desktop";
-        var start = HiddenStart(binary.Path, args);
-        start.CreateNoWindow = false;
+        string args;
+        if (string.IsNullOrWhiteSpace(hostAddress))
+        {
+            args = "";
+        }
+        else if (pairOnly)
+        {
+            args = $"pair {MoonlightHost(hostAddress)}";
+        }
+        else
+        {
+            args = $"stream {MoonlightHost(hostAddress)} Desktop";
+        }
+
+        var start = new ProcessStartInfo
+        {
+            FileName = binary.Path,
+            Arguments = args,
+            UseShellExecute = true,
+            WorkingDirectory = Path.GetDirectoryName(binary.Path) ?? Environment.CurrentDirectory
+        };
         return Process.Start(start) ?? throw new InvalidOperationException("No se pudo arrancar el cliente.");
     }
 

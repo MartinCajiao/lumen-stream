@@ -1,4 +1,5 @@
 using Lumen.Core.Discovery;
+using Lumen.Core.Runtime;
 using Lumen.Core.Wan;
 using Xunit;
 
@@ -67,6 +68,24 @@ public sealed class WanAndDiscoveryTests
         var picked = WanBootstrap.PickShareAddress(null, "203.0.113.8", null, "192.168.1.4", routerOpened: true);
         Assert.Equal("203.0.113.8", picked);
         Assert.Equal("100.64.1.2", WanBootstrap.PickShareAddress("100.64.1.2", "203.0.113.8", null, "192.168.1.4", true));
+    }
+
+    [Fact]
+    public void Without_upnp_share_code_stays_lan_not_fake_internet()
+    {
+        var picked = WanBootstrap.PickShareAddress(null, "203.0.113.8", null, "192.168.1.4", routerOpened: false);
+        Assert.Equal("192.168.1.4", picked);
+        Assert.Equal("Esta wifi", WanBootstrap.Describe(picked, null, false));
+        Assert.Contains("Tailscale", WanBootstrap.ShareHint("Esta wifi"));
+    }
+
+    [Fact]
+    public void Unreachable_lan_ip_explains_other_house()
+    {
+        var msg = HostProbe.ExplainUnreachable("192.168.1.20");
+        Assert.Contains("Tailscale", msg);
+        Assert.Contains("wifi", msg, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("100.x", HostProbe.ExplainUnreachable("100.64.1.2"));
     }
 
     [Fact]

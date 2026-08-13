@@ -36,7 +36,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private string _pin = "";
     private string _remoteAddress = "";
     private string _publicIp = "";
-    private string _shareCode = "";
+    private string _wanMethod = "Esta wifi";
+    private bool _pairingBusy;
     private bool _showShareOptions;
     private bool _isInstalling;
     private bool _showAdvanced;
@@ -139,7 +140,14 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public string Pin
     {
         get => _pin;
-        set => Set(ref _pin, value);
+        set
+        {
+            Set(ref _pin, value);
+            if (_pin.Trim().Length == 4 && _pin.Trim().All(char.IsDigit))
+            {
+                _ = PairAsync();
+            }
+        }
     }
 
     public string RemoteAddress
@@ -152,8 +160,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public string PublicIp => string.IsNullOrWhiteSpace(_publicIp) ? "detectando…" : _publicIp;
     public string? TailscaleIp => NetworkAddresses.TailscaleIpv4();
     public string ShareCode => string.IsNullOrWhiteSpace(_shareCode) ? (TailscaleIp ?? LocalIp) : _shareCode;
-    public string ShareHelp =>
-        "En el otro PC pulsa Conectar. Si está en otra casa, escribe este código y pulsa Añadir. Si pide PIN, escríbelo aquí.";
+    public string ShareHelp => WanBootstrap.ShareHint(_wanMethod);
 
     public bool ShowAdvanced
     {
@@ -350,8 +357,35 @@ public sealed class MainViewModel : INotifyPropertyChanged
             return;
         }
 
+        await ConnectAddressAsync(item.Address, item.Title).ConfigureAwait(true);
+    }
+
+    public async Task ConnectTypedAsync()
+    {
+        if (string.IsNullOrWhiteSpace(RemoteAddress))
+        {
+            Status = "Pega el código del PC gamer y pulsa Conectar.";
+            return;
+        }
+
+        AddRemoteComputer();
+        var (host, _) = ParseRemote(RemoteAddress);
+        await ConnectAddressAsync(host, host).ConfigureAwait(true);
+    }
+
+    private async Task ConnectAddressAsync(string host, string title)
+    {
         if (!await EnsureReadyAsync(needHost: false, needClient: true).ConfigureAwait(true))
         {
+            return;
+        }
+
+        Status = "Llamando al otro PC…";
+        var probe = await HostProbe.CheckAsync(host, CurrentProfile.Wan.HostPort, CancellationToken.None)
+            .ConfigureAwait(true);
+        if (!probe.Reachable)
+        {
+            Status = probe.Message;
             return;
         }
 
@@ -363,15 +397,43 @@ public sealed class MainViewModel : INotifyPropertyChanged
             return;
         }
 
+        var known = KnownComputerStore.Load();
+        var pc = known.FirstOrDefault(k => k.Address == host);
+        var pairFirst = pc is null || !pc.ReadyToStream;
         try
         {
-            SessionLauncher.StartClient(CurrentProfile, client, item.Address);
-            Status = $"Entrando a {item.Title}…";
+            SessionLauncher.StartClient(CurrentProfile, client, host, pairOnly: pairFirst);
+            if (pc is not null)
+            {
+                pc.ReadyToStream = true;
+                KnownComputerStore.Save(known);
+            }
+
+            Status = pairFirst
+                ? "En Moonlight sale un PIN. Escríbelo en el PC gamer (el que pulsó Compartir) y pulsa Listo. Luego aquí pulsa Conectar otra vez."
+                : $"Entrando a {title}…";
         }
         catch (Exception ex)
         {
             Status = ex.Message;
         }
+    }
+
+    private (string Host, int Port) ParseRemote(string raw)
+    {
+        var host = raw.Trim();
+        var port = CurrentProfile.Wan.HostPort;
+        if (host.Contains(':', StringComparison.Ordinal) && !host.StartsWith('[') && !IPAddress.TryParse(host, out _))
+        {
+            var parts = host.Split(':', 2);
+            host = parts[0];
+            if (int.TryParse(parts[1], out var parsed))
+            {
+                port = parsed;
+            }
+        }
+
+        return (host, port);
     }
 
     public void StartHost() => _ = StartHostAsync();
@@ -430,6 +492,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             }
 
             _shareCode = wan.Address;
+            _wanMethod = wan.Method;
             if (!string.IsNullOrWhiteSpace(wan.PublicIpv4))
             {
                 _publicIp = wan.PublicIpv4;
@@ -438,9 +501,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             _ = RefreshPublicIpAsync();
             _shareOn = true;
             _relaunchs = 0;
-            Status = wan.Method == "Esta wifi"
-                ? $"Listo en esta wifi. Código: {wan.Address}. Si el otro está en otra casa, puede no entrar."
-                : $"Listo a distancia. En el otro PC escribe {wan.Address} y pulsa Añadir, o Conectar si ya sale.";
+            Status = $"{(wan.Method == "Esta wifi" ? "Listo en esta wifi" : "Listo")}. Código: {wan.Address}. {WanBootstrap.ShareHint(wan.Method)}";
             NotifyShare();
         }
         catch (Exception ex)
@@ -478,6 +539,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         _relaunchBusy = false;
         _relaunchs = 0;
         _shareCode = "";
+        _wanMethod = "Esta wifi";
         _announceCts?.Cancel();
         HostProcess.StopAll();
         _hostProcess = null;
@@ -487,22 +549,32 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public async Task PairAsync()
     {
-        if (string.IsNullOrWhiteSpace(Pin))
+        if (_pairingBusy)
         {
-            Status = "Escribe el PIN que ves en el otro PC.";
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(Pin))
+        {
+            Status = "Escribe el PIN que ves en Moonlight en el otro PC.";
+            return;
+        }
+
+        _pairingBusy = true;
         try
         {
             var ok = await PairingClient.SubmitPinAsync(Pin.Trim(), _settings.Username, CancellationToken.None);
             Status = ok
-                ? "PIN correcto. El otro PC ya puede entrar."
-                : "Ese PIN no vale. Cópialo otra vez del otro PC.";
+                ? "PIN correcto. En el otro PC pulsa Conectar otra vez."
+                : "Ese PIN no vale o Apollo no está abierto aquí. El PIN se escribe en el PC gamer, el que comparte.";
         }
         catch (Exception ex)
         {
             Status = $"No pude emparejar: {ex.Message}";
+        }
+        finally
+        {
+            _pairingBusy = false;
         }
     }
 
@@ -515,18 +587,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             return;
         }
 
-        var host = raw;
-        var port = CurrentProfile.Wan.HostPort;
-        if (raw.Contains(':', StringComparison.Ordinal) && !raw.StartsWith('[') && !IPAddress.TryParse(raw, out _))
-        {
-            var parts = raw.Split(':', 2);
-            host = parts[0];
-            if (int.TryParse(parts[1], out var parsed))
-            {
-                port = parsed;
-            }
-        }
-
+        var (host, port) = ParseRemote(raw);
         var known = KnownComputerStore.Load();
         var existing = known.FirstOrDefault(k => k.Address == host && k.Port == port);
         if (existing is null)

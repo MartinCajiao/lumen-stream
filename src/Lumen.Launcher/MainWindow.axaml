@@ -50,9 +50,9 @@
           <Border IsVisible="{Binding IsSharing}" Background="{StaticResource Card}" CornerRadius="14" Padding="16">
             <StackPanel Spacing="10">
               <TextBlock Text="Este PC ya es el stream" FontWeight="SemiBold" Foreground="#3DFF9A" FontSize="18"/>
-              <TextBlock Text="En el otro Lumen pulsa Conectar. Desde otra casa, escribe este código:" TextWrapping="Wrap"/>
+              <TextBlock Text="{Binding ShareHelp}" TextWrapping="Wrap" Foreground="{StaticResource Muted}"/>
               <TextBlock Text="{Binding ShareCode}" FontSize="28" FontWeight="Bold"/>
-              <TextBlock Text="Si el otro PC muestra un PIN, escríbelo aquí:" Foreground="{StaticResource Muted}"/>
+              <TextBlock Text="El PIN sale en Moonlight en el OTRO PC. Escríbelo aquí (4 números) o pulsa Listo." Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <TextBox Width="160" Watermark="PIN" Text="{Binding Pin}" FontSize="18"/>
                 <Button Classes="purple" Content="Listo" Click="OnPair"/>
@@ -85,10 +85,11 @@
           </ItemsControl>
 
           <TextBlock Text="¿No aparece el otro PC?" FontWeight="SemiBold"/>
-          <TextBlock Text="Pega el código que le sale al compartir y pulsa Añadir." Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
+          <TextBlock Text="Pega el código y pulsa Conectar. Si estás en otra casa y el código es 192.168.x, no va: hace falta Tailscale." Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <TextBox Width="240" Watermark="código o IP" Text="{Binding RemoteAddress}"/>
+            <TextBox Width="220" Watermark="código o IP" Text="{Binding RemoteAddress}"/>
             <Button Classes="purple" Content="Añadir" Click="OnAddRemote"/>
+            <Button Classes="pink" Content="Conectar" Click="OnConnectTyped"/>
           </StackPanel>
         </StackPanel>
       </ScrollViewer>

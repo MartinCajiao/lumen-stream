@@ -80,6 +80,10 @@ public sealed class PcAndInstallerTests
     }
 
     [Fact]
+    public void Pair_password_matches_host_creds() =>
+        Assert.Equal("notRGB-host", Lumen.Core.Host.PairingClient.PasswordFor("notRGB"));
+
+    [Fact]
     public void Manual_pc_stays_connectable()
     {
         var pc = new KnownComputer { Address = "203.0.113.9", Manual = true, LastSeenUtc = DateTimeOffset.UtcNow.AddHours(-2) };

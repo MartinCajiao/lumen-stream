@@ -12,6 +12,7 @@ public sealed class KnownComputer
     public int PanelHz { get; set; }
     public DateTimeOffset LastSeenUtc { get; set; }
     public bool Manual { get; set; }
+    public bool ReadyToStream { get; set; }
 }
 
 public static class KnownComputerStore

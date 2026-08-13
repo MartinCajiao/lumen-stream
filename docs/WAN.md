@@ -2,6 +2,8 @@
 
 Parsec Enterprise vende un relay global. Eso cuesta dinero; Lumen no opera uno.
 
+Dos casas con internet distinto no se ven. Sin Tailscale (o UPnP de verdad, sin CGNAT) el código 192.168.x no existe en la otra red.
+
 ## Orden recomendado
 
 1. **LAN** — UDP directo, mDNS de Moonlight + beacon Lumen (`47991/udp`).

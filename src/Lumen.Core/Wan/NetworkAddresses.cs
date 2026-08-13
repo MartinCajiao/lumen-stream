@@ -36,8 +36,7 @@ public static class NetworkAddresses
                     continue;
                 }
 
-                var bytes = address.Address.GetAddressBytes();
-                if (bytes[0] == 100 && bytes[1] >= 64 && bytes[1] <= 127)
+                if (IsTailscaleIpv4(address.Address.ToString()))
                 {
                     return address.Address.ToString();
                 }
@@ -85,7 +84,18 @@ public static class NetworkAddresses
         return b[0] == 10
                || (b[0] == 172 && b[1] >= 16 && b[1] <= 31)
                || (b[0] == 192 && b[1] == 168)
-               || (b[0] == 100 && b[1] >= 64 && b[1] <= 127)
+               || IsTailscaleIpv4(ip)
                || b[0] == 127;
+    }
+
+    public static bool IsTailscaleIpv4(string ip)
+    {
+        if (!IPAddress.TryParse(ip, out var parsed) || parsed.AddressFamily != AddressFamily.InterNetwork)
+        {
+            return false;
+        }
+
+        var b = parsed.GetAddressBytes();
+        return b[0] == 100 && b[1] >= 64 && b[1] <= 127;
     }
 }

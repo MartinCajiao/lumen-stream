@@ -29,6 +29,7 @@ public sealed class MoonlightSettingsWriterTests
         Assert.Equal(true, store.Values["framepacing"]);
         Assert.Equal(true, store.Values["gameopts"]);
         Assert.Equal(2, store.Values["videocfg"]);
+        Assert.Equal(2, store.Values["windowmode"]);
         Assert.True((int)store.Values["bitrate"] >= 80_000);
     }
 

@@ -39,6 +39,7 @@ public partial class MainWindow : Window
     private async void OnShare(object? sender, RoutedEventArgs e) => await _vm.ToggleShareAsync();
     private async void OnPair(object? sender, RoutedEventArgs e) => await _vm.PairAsync();
     private void OnAddRemote(object? sender, RoutedEventArgs e) => _vm.AddRemoteComputer();
+    private async void OnConnectTyped(object? sender, RoutedEventArgs e) => await _vm.ConnectTypedAsync();
 
     private async void OnConnectCard(object? sender, RoutedEventArgs e)
     {

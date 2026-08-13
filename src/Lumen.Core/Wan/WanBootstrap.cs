@@ -16,12 +16,12 @@ public static class WanBootstrap
             return tailscale;
         }
 
-        if (!string.IsNullOrWhiteSpace(publicIpv4) && !NetworkAddresses.IsPrivateIpv4(publicIpv4))
+        if (routerOpened && !string.IsNullOrWhiteSpace(publicIpv4) && !NetworkAddresses.IsPrivateIpv4(publicIpv4))
         {
             return publicIpv4;
         }
 
-        if (!string.IsNullOrWhiteSpace(ipv6))
+        if (routerOpened && !string.IsNullOrWhiteSpace(ipv6))
         {
             return ipv6;
         }
@@ -36,18 +36,20 @@ public static class WanBootstrap
             return "Tailscale";
         }
 
-        if (routerOpened)
-        {
-            return "Internet";
-        }
-
-        if (!NetworkAddresses.IsPrivateIpv4(address) && address.Contains('.', StringComparison.Ordinal))
+        if (routerOpened && !NetworkAddresses.IsPrivateIpv4(address))
         {
             return "Internet";
         }
 
         return "Esta wifi";
     }
+
+    public static string ShareHint(string method) => method switch
+    {
+        "Tailscale" => "Ese código vale desde otra casa si las dos PCs tienen Tailscale (misma cuenta).",
+        "Internet" => "El router abrió puertos. Si desde otra casa no entra, tu ISP es CGNAT: instala Tailscale en las dos.",
+        _ => "Ese código solo vale en esta wifi. En la casa de tu tía las redes no se ven. Instala Tailscale (gratis) en las dos PCs, comparte otra vez, y usa el código 100.x."
+    };
 
     public static async Task<WanEndpoint> OpenAsync(string? hostExe, int httpPort, CancellationToken token)
     {

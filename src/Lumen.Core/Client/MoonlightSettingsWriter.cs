@@ -44,7 +44,7 @@ public static class MoonlightSettingsWriter
         store.Set("capturesyskeys", 1); // fullscreen
         store.Set("keepawake", true);
         store.Set("videodec", 1); // force hardware
-        store.Set("windowmode", 0); // fullscreen
+        store.Set("windowmode", 2); // windowed so errors are visible
         store.Set("abstouchmode", true);
         store.Set("mouseacceleration", profile.NativePenTouch); // absolute mouse helps tablets
     }
