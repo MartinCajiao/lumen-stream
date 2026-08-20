@@ -71,12 +71,17 @@ public sealed class WanAndDiscoveryTests
     }
 
     [Fact]
-    public void Without_upnp_share_code_stays_lan_not_fake_internet()
+    public void Without_upnp_share_code_keeps_public_ip_with_honest_warning()
     {
         var picked = WanBootstrap.PickShareAddress(null, "203.0.113.8", null, "192.168.1.4", routerOpened: false);
-        Assert.Equal("192.168.1.4", picked);
-        Assert.Equal("Esta wifi", WanBootstrap.Describe(picked, null, false));
-        Assert.Contains("Tailscale", WanBootstrap.ShareHint("Esta wifi"));
+        Assert.Equal("203.0.113.8", picked);
+        Assert.Equal("Internet (prueba)", WanBootstrap.Describe(picked, null, false));
+        Assert.Contains("Tailscale", WanBootstrap.ShareHint("Internet (prueba)"));
+        Assert.Contains("UPnP", WanBootstrap.ShareHint("Internet (prueba)"));
+
+        var lan = WanBootstrap.PickShareAddress(null, null, null, "192.168.1.4", routerOpened: false);
+        Assert.Equal("192.168.1.4", lan);
+        Assert.Equal("Esta wifi", WanBootstrap.Describe(lan, null, false));
     }
 
     [Fact]

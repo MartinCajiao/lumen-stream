@@ -80,6 +80,12 @@ public static class SessionLauncher
         string? webUser,
         CancellationToken token)
     {
+        var conflict = PortConflictProbe.Diagnose(profile.Wan.HostPort);
+        if (conflict is not null)
+        {
+            throw new InvalidOperationException(conflict);
+        }
+
         SunshineConfigWriter.Write(profile);
         AppsJsonWriter.Write(profile);
         await HostProcess.StopAllAndWaitAsync(token).ConfigureAwait(false);

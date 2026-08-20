@@ -12,6 +12,8 @@ Dos casas con internet distinto no se ven. Sin Tailscale (o UPnP de verdad, sin 
 4. **STUN** — por defecto `stun:stun.l.google.com:19302` (solo descubrimiento de IP pública).
 5. **TURN self-hosted** — si el NAT es simétrico. Coturn en un VPS barato: `turn:tu-servidor:3478`. Pon el URI en Ajustes.
 
+El launcher siempre muestra la IP pública cuando STUN la descubre. Si UPnP no abrió los puertos (apagado en el router o CGNAT), el código se marca **Internet (prueba)**: vale si tienes un redireccionamiento manual de puertos; si no, instala Tailscale en las dos PCs.
+
 El enlace de invitación es `lumen://connect?host=IP&port=47989`. Pégalo o escribe la IP en Conectar.
 
 SSO, SCIM, panel admin y audit logs de Parsec Teams no están en alcance.

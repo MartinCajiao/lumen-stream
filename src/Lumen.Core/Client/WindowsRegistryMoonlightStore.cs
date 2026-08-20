@@ -41,10 +41,26 @@ public static class ClientSettingsApplier
     public static void Apply(StreamProfile profile)
     {
         MoonlightSettingsWriter.Apply(profile, new WindowsRegistryMoonlightStore());
-        var iniDir = Path.Combine(
+        var ini = MoonlightIniPath();
+        Directory.CreateDirectory(Path.GetDirectoryName(ini)!);
+        File.WriteAllText(ini, MoonlightSettingsWriter.RenderIni(profile));
+    }
+
+    /// <summary>
+    /// Moonlight in portable mode (portable.dat next to the exe) reads its settings from
+    /// Moonlight.conf in the exe directory and ignores the registry and %AppData% entirely.
+    /// </summary>
+    public static string MoonlightIniPath()
+    {
+        var portableDir = MoonlightPairingProbe.PortableConfigDir(null);
+        if (portableDir is not null)
+        {
+            return Path.Combine(portableDir, MoonlightPairingProbe.IniFileName);
+        }
+
+        return Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            MoonlightSettingsWriter.Organization);
-        Directory.CreateDirectory(iniDir);
-        File.WriteAllText(Path.Combine(iniDir, "Moonlight.conf"), MoonlightSettingsWriter.RenderIni(profile));
+            MoonlightSettingsWriter.Organization,
+            MoonlightPairingProbe.IniFileName);
     }
 }

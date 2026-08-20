@@ -382,7 +382,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
 
         Status = "Llamando al otro PC…";
-        var probe = await HostProbe.CheckAsync(host, CurrentProfile.Wan.HostPort, CancellationToken.None)
+        var known = KnownComputerStore.Load();
+        var pc = known.FirstOrDefault(k => k.Address == host);
+        var port = pc?.Port ?? CurrentProfile.Wan.HostPort;
+        var probe = await HostProbe.CheckAsync(host, port, CancellationToken.None)
             .ConfigureAwait(true);
         if (!probe.Reachable)
         {
@@ -398,13 +401,27 @@ public sealed class MainViewModel : INotifyPropertyChanged
             return;
         }
 
-        var known = KnownComputerStore.Load();
-        var pc = known.FirstOrDefault(k => k.Address == host);
-        var pairFirst = pc is null || !pc.ReadyToStream;
+        var pairFirst = pc is null;
+        var pairingUnknown = false;
+        if (pc is not null)
+        {
+            var paired = await MoonlightPairingProbe.IsPairedAsync(host, port, CancellationToken.None)
+                .ConfigureAwait(true);
+            if (paired is null)
+            {
+                pairingUnknown = true;
+                pairFirst = !pc.ReadyToStream;
+            }
+            else
+            {
+                pairFirst = !paired.Value;
+            }
+        }
+
         try
         {
             SessionLauncher.StartClient(CurrentProfile, client, host, pairOnly: pairFirst);
-            if (pc is not null)
+            if (pairingUnknown && pc is not null)
             {
                 pc.ReadyToStream = true;
                 KnownComputerStore.Save(known);
@@ -503,6 +520,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
             _shareOn = true;
             _relaunchs = 0;
             Status = $"{(wan.Method == "Esta wifi" ? "Listo en esta wifi" : "Listo")}. Código: {wan.Address}. {WanBootstrap.ShareHint(wan.Method)}";
+            if (!wan.FirewallOk)
+            {
+                Status += " Aviso: Windows no dejó abrir el firewall (necesita permisos de administrador). Si nadie entra, cierra Lumen, ábrelo como administrador y comparte otra vez.";
+            }
+
             NotifyShare();
         }
         catch (Exception ex)

@@ -37,8 +37,8 @@ public static class SunshineConfigWriter
             cert = {ToConfPath(LumenPaths.HostCertFile)}
             ignore_encoder_probe_failure = enabled
 
-            # Advertise high-refresh so 144/165/240 are first-class, not hidden.
-            fps = [30,60,90,120,144,165,240]
+            # Advertise high-refresh so 144/165/200/240 are first-class, not hidden.
+            fps = [30,60,90,120,144,165,200,240]
             resolutions = [
               1280x720,
               1920x1080,

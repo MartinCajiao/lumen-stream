@@ -2,7 +2,7 @@
 
 ## moonlight-qt
 
-`0001-first-class-high-refresh.patch` añade 90/120/144/165/240 al combo de FPS.
+`0001-first-class-high-refresh.patch` añade 90/120/144/165/200/240 al combo de FPS.
 
 ```powershell
 git -C client apply ../patches/moonlight-qt/0001-first-class-high-refresh.patch
