@@ -1,5 +1,16 @@
 # Release notes
 
+## Lumen Stream v0.4.1 (2026-09-07)
+
+### Sin fricción: adiós al login
+
+- **No más usuario ni contraseña**. Lumen entra directo a la pantalla de Compartir/Conectar. La pantalla de "crear cuenta / iniciar sesión" ya no existe — era una joda que no aportaba nada en un launcher de un solo usuario.
+- El botón "Cerrar sesión" ahora es "Cambiar nombre" y te deja dentro (nunca te saca al muro de login).
+- Sigue habiendo dos archivos para el usuario: **`Lumen.exe`** (portable) y **`Lumen-Setup.exe`** (instalador). El Setup instala Apollo + Moonlight solo; el portable los baja solito al primer Compartir. El usuario no instala Apollo ni Moonlight a mano.
+
+### Tests
+- 71 tests pasando.
+
 ## Lumen Stream v0.4.0 (2026-09-07)
 
 ### La app ya no depende de apps externas para cruzar CGNAT
@@ -23,7 +34,7 @@ Dos PCs detrás de CGNAT simétrico, sin IPv6, no se ven directo sin un relay. E
 ### Artefactos
 - **Lumen.exe** — launcher portable (win-x64, self-contained)
 - **Lumen-Setup.exe** — instalador (Apollo + Moonlight + firewall)
-- **lumen-relay** — servidor relay para desplegar en una VM gratis (linux-x64 / win-x64)
+- **lumen-relay** — servidor relay para desplegar en una VM gratis (linux-x64 / win-x64, opcional)
 
 ## Lumen Stream v0.3.1 (2026-09-07)
 

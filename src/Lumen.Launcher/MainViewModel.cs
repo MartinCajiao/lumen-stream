@@ -70,7 +70,17 @@ public sealed class MainViewModel : INotifyPropertyChanged
         ClientBinary = ProcessLocator.FindClient();
         RebuildComputers();
         RefreshFeatures();
-        Status = IsLoggedIn ? FeatureChecker.Headline(Features) : (_authIsCreate ? "Crea tu cuenta. Solo usuario y contraseña, sin email." : "Entra con tu usuario.");
+
+        // No login wall: if there's no local name yet, pick one and enter straight in.
+        // The account/password screen was friction with no value for a single-user launcher.
+        if (!IsLoggedIn)
+        {
+            var defaultName = string.IsNullOrWhiteSpace(Environment.MachineName) ? "yo" : Environment.MachineName;
+            EnterSession(defaultName);
+            return;
+        }
+
+        Status = FeatureChecker.Headline(Features);
         if (IsLoggedIn)
         {
             AdoptRunningHost();
@@ -407,12 +417,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public void Logout()
     {
         StopHost();
-        _settings.Username = "";
-        LumenSettingsStore.Save(_settings);
-        AuthIsCreate = false;
-        OnPropertyChanged(nameof(IsLoggedIn));
-        OnPropertyChanged(nameof(Greeting));
-        Status = "Sesión cerrada. Entra o crea otra cuenta.";
+        // No login wall anymore: dropping the session just re-enters with a fresh
+        // default name. The password screen is gone for good.
+        var freshName = (Environment.MachineName + "-" + Random.Shared.Next(100, 999)).Trim();
+        EnterSession(freshName);
     }
 
     public Task ToggleShareAsync()
