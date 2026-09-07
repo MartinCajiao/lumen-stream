@@ -59,7 +59,16 @@ public static class SessionLauncher
             UseShellExecute = true,
             WorkingDirectory = Path.GetDirectoryName(binary.Path) ?? Environment.CurrentDirectory
         };
-        return Process.Start(start) ?? throw new InvalidOperationException("No se pudo arrancar el cliente.");
+        var process = Process.Start(start) ?? throw new InvalidOperationException("No se pudo arrancar el cliente.");
+        if (pairOnly && OperatingSystem.IsWindows())
+        {
+            // Pairing is now fully handled by Lumen; hide Moonlight so the user only
+            // sees Lumen's progress. The stream window will be shown once pairing
+            // completes and we relaunch with pairOnly=false.
+            _ = Task.Run(() => WindowHelper.HideMoonlightPairWindow(process));
+        }
+
+        return process;
     }
 
     /// <summary>

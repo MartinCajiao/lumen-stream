@@ -1,0 +1,34 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Lumen.Launcher.RelayHelpWindow"
+        Title="Poner mi relay Lumen"
+        Width="620"
+        Height="560"
+        MinWidth="480"
+        MinHeight="420"
+        WindowStartupLocation="CenterOwner">
+
+  <ScrollViewer Padding="24">
+    <StackPanel Spacing="16">
+      <TextBlock Text="Relay Lumen: para jugar desde otra casa" FontSize="22" FontWeight="Bold"/>
+      <TextBlock Text="Si tu internet tiene CGNAT (codigo publico que no entra), necesitas un relay. Es un servidor Linux con IP publica que pasa los datos entre las dos PCs." TextWrapping="Wrap" Foreground="{StaticResource Muted}"/>
+
+      <TextBlock Text="Opcion A: Oracle Cloud (gratis para siempre)" FontWeight="SemiBold" FontSize="18"/>
+      <TextBlock Text="1. Crea cuenta gratis en cloud.oracle.com (pide tarjeta solo para verificar)." TextWrapping="Wrap"/>
+      <TextBlock Text="2. Crea una VM 'VM.Standard.E2.1.Micro' con Ubuntu 22.04." TextWrapping="Wrap"/>
+      <TextBlock Text="3. Abre el puerto 47991/TCP en el Security List." TextWrapping="Wrap"/>
+      <TextBlock Text="4. Abre PowerShell como administrador y pega este comando:" TextWrapping="Wrap"/>
+      <TextBox Name="OracleCommand" IsReadOnly="True" TextWrapping="Wrap" MinHeight="60" FontFamily="Consolas" FontSize="12"/>
+      <Button Classes="pink" Content="Copiar comando Oracle" Click="OnCopyOracle"/>
+
+      <TextBlock Text="Opcion B: Cualquier servidor Linux con IP publica" FontWeight="SemiBold" FontSize="18"/>
+      <TextBlock Text="Si tienes un VPS barato (3-5 USD/mes) o una maquina con IP publica, usa este comando:" TextWrapping="Wrap"/>
+      <TextBox Name="SimpleCommand" IsReadOnly="True" TextWrapping="Wrap" MinHeight="40" FontFamily="Consolas" FontSize="12"/>
+      <Button Classes="pink" Content="Copiar comando simple" Click="OnCopySimple"/>
+
+      <TextBlock Text="Cuando termine, el script guarda la configuracion en Lumen. Abre Lumen, pulsa Compartir, y el codigo saldra como relay:... Pegalo en el otro PC." TextWrapping="Wrap" Foreground="{StaticResource Muted}"/>
+
+      <Button Classes="ghost" Content="Cerrar" Click="OnClose" HorizontalAlignment="Right"/>
+    </StackPanel>
+  </ScrollViewer>
+</Window>

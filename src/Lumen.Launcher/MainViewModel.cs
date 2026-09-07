@@ -378,6 +378,60 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         OnPropertyChanged(nameof(IsSharing));
         OnPropertyChanged(nameof(ShareLabel));
+
+        // Sync Lumen status with what Moonlight is actually doing.
+        SyncMoonlightStatus();
+    }
+
+    private DateTime _lastMoonlightStatusTick = DateTime.MinValue;
+    private MoonlightState _lastMoonlightState = MoonlightState.Closed;
+
+    private void SyncMoonlightStatus()
+    {
+        // Check every ~800ms (the overlay timer ticks at 800ms) but only update
+        // status when the state changes to avoid blinking.
+        var now = DateTime.UtcNow;
+        if (now - _lastMoonlightStatusTick < TimeSpan.FromMilliseconds(700))
+        {
+            return;
+        }
+
+        _lastMoonlightStatusTick = now;
+        var state = MoonlightWatcher.Inspect();
+        if (state == _lastMoonlightState)
+        {
+            return;
+        }
+
+        _lastMoonlightState = state;
+        switch (state)
+        {
+            case MoonlightState.Closed:
+                // Only report "Moonlight cerró" when we were actually trying to connect.
+                if (!IsSharing && !string.IsNullOrWhiteSpace(Status) &&
+                    (Status.Contains("Entrando", StringComparison.OrdinalIgnoreCase) ||
+                     Status.Contains("Emparejando", StringComparison.OrdinalIgnoreCase) ||
+                     Status.Contains("relay", StringComparison.OrdinalIgnoreCase)))
+                {
+                    Status = "Moonlight se cerró. Pulsa Conectar otra vez.";
+                }
+                break;
+
+            case MoonlightState.PairingOrIdle:
+                if (Status.Contains("Entrando", StringComparison.OrdinalIgnoreCase) &&
+                    !Status.Contains("Moonlight", StringComparison.OrdinalIgnoreCase))
+                {
+                    Status += " (Moonlight preparando…)";
+                }
+                break;
+
+            case MoonlightState.Streaming:
+                if (!Status.Contains("Streameando", StringComparison.OrdinalIgnoreCase))
+                {
+                    Status = "Streameando. Cierra Moonlight para volver a Lumen.";
+                }
+                break;
+        }
     }
 
     public void SubmitAuth()

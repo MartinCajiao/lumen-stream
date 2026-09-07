@@ -42,6 +42,7 @@ public partial class MainWindow : Window
     private async void OnConnectTyped(object? sender, RoutedEventArgs e) => await _vm.ConnectTypedAsync();
     private async void OnInstallTailscale(object? sender, RoutedEventArgs e) => await _vm.InstallTailscaleAsync();
     private void OnToggleAdvanced(object? sender, RoutedEventArgs e) => _vm.ShowAdvanced = !_vm.ShowAdvanced;
+    private void OnShowRelayHelp(object? sender, RoutedEventArgs e) => new RelayHelpWindow().Show();
 
     private async void OnConnectCard(object? sender, RoutedEventArgs e)
     {

@@ -113,7 +113,16 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
 
-          <TextBlock Text="¿No aparece el otro PC?" FontWeight="SemiBold"/>
+          <Border Background="{StaticResource Card}" CornerRadius="14" Padding="16" Margin="0,8,0,0">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Relay Lumen facil" FontWeight="SemiBold" FontSize="18"/>
+              <TextBlock Text="Para jugar desde otra casa/casa de tu tia, necesitas un relay publico. Lo mas facil: una VM gratuita en Oracle Cloud (una sola vez)." Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
+              <Button Classes="purple" Content="Como poner mi relay (copiar pasos)" Click="OnShowRelayHelp" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+              <TextBlock Text="O si ya tienes un servidor Linux con IP publica, pegalo en Ajustes arriba: host:puerto:secreto." Foreground="{StaticResource Muted}" TextWrapping="Wrap" FontSize="13"/>
+            </StackPanel>
+          </Border>
+
+          <TextBlock Text="¿No aparece el otro PC?" FontWeight="SemiBold" Margin="0,8,0,0"/>
           <TextBlock Text="Pega el código y pulsa Conectar. Si estás en otra casa y el código es 192.168.x, no va: hace falta IPv6, el relay Lumen o Tailscale." Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
           <StackPanel Orientation="Horizontal" Spacing="8">
             <TextBox Width="220" Watermark="código o IP" Text="{Binding RemoteAddress}"/>

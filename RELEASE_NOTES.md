@@ -1,5 +1,19 @@
 # Release notes
 
+## Lumen Stream v0.4.6 (2026-09-07)
+
+### Mas facil de usar: Moonlight oculto, sincronizacion real, relay facil
+
+- **Moonlight se esconde cuando solo empareja.** Al pulsar Conectar, Lumen abre Moonlight para hacer el emparejamiento, pero inmediatamente esconde su ventana. El usuario solo ve Lumen y su mensaje de progreso. Cuando el stream empieza, Moonlight aparece con el escritorio/juego.
+- **Sincronizacion en tiempo real con Moonlight.** Lumen ahora sabe si Moonlight esta cerrado, emparejando o streameando, y muestra el estado en la barra de estado: "Moonlight se cerro", "Streameando...", etc.
+- **Relay ultra facil.** Nueva tarjeta "Relay Lumen facil" con un boton que abre una ventana con los pasos exactos y dos comandos de un solo clic para copiar y pegar en PowerShell:
+  - **Opcion A**: Oracle Cloud (gratis para siempre). Copiar, pegar en PowerShell, seguir 4 pasos.
+  - **Opcion B**: Cualquier servidor Linux con IP publica.
+- La seccion Ajustes (con el campo relay) sigue arriba, plegable.
+
+### Tests
+- 76 tests pasando.
+
 ## Lumen Stream v0.4.5 (2026-09-07)
 
 ### UI: Ajustes siempre al alcance
