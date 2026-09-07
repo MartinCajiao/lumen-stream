@@ -259,8 +259,18 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool ShowAdvanced
     {
         get => _showAdvanced;
-        set => Set(ref _showAdvanced, value);
+        set
+        {
+            if (_showAdvanced != value)
+            {
+                _showAdvanced = value;
+                OnPropertyChanged(nameof(ShowAdvanced));
+                OnPropertyChanged(nameof(AdvancedLabel));
+            }
+        }
     }
+
+    public string AdvancedLabel => ShowAdvanced ? "Ajustes  ▲" : "Ajustes  ▼";
 
     public bool PrivacyMode
     {

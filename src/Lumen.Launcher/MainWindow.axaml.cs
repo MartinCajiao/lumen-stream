@@ -41,6 +41,7 @@ public partial class MainWindow : Window
     private void OnAddRemote(object? sender, RoutedEventArgs e) => _vm.AddRemoteComputer();
     private async void OnConnectTyped(object? sender, RoutedEventArgs e) => await _vm.ConnectTypedAsync();
     private async void OnInstallTailscale(object? sender, RoutedEventArgs e) => await _vm.InstallTailscaleAsync();
+    private void OnToggleAdvanced(object? sender, RoutedEventArgs e) => _vm.ShowAdvanced = !_vm.ShowAdvanced;
 
     private async void OnConnectCard(object? sender, RoutedEventArgs e)
     {

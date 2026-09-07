@@ -63,7 +63,12 @@
           <Border IsVisible="{Binding ShowTailscaleHelp}" Background="#2A1430" CornerRadius="14" Padding="16" BorderBrush="#FF4DA6" BorderThickness="1">
             <StackPanel Spacing="10">
               <TextBlock Text="Desde otra casa no va a entrar (todavía)" FontWeight="SemiBold" Foreground="#FFB3D9" FontSize="18"/>
-              <TextBlock Text="Tu internet tiene doble NAT: el código público no funciona. La salida gratis es Tailscale: instálalo en este PC y en el otro con la misma cuenta. Cuando conecte, el código cambia solo a 100.x y eso sí cruza casas." TextWrapping="Wrap" Foreground="{StaticResource Muted}"/>
+              <TextBlock Text="Tu internet tiene doble NAT: el código público no cruza. La salida sin instalar nada es el relay Lumen. Pega aquí tu relay (host:puerto:secreto) y comparte otra vez — el código cambia a relay:… y ya cruza casas." TextWrapping="Wrap" Foreground="{StaticResource Muted}"/>
+              <TextBox Watermark="relay Lumen (host:puerto:secreto)" Text="{Binding RelayServer}" HorizontalAlignment="Stretch"/>
+              <TextBlock Text="¿No tienes un relay? Es gratis: una VM en Oracle Cloud (10 min, una vez). Pídelo y te guío paso a paso." Foreground="{StaticResource Muted}" TextWrapping="Wrap" FontSize="13"/>
+              <Border CornerRadius="8" Padding="8,2" Background="#3A255C" HorizontalAlignment="Left">
+                <TextBlock Text="o, como alternativa, instala Tailscale en las dos PCs (misma cuenta):" FontSize="13" Foreground="{StaticResource Muted}"/>
+              </Border>
               <Button Classes="pink" Content="{Binding TailscaleButtonLabel}" Click="OnInstallTailscale"
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                       IsEnabled="{Binding !TailscaleBusy}"/>
@@ -102,9 +107,19 @@
             <Button Classes="pink" Content="Conectar" Click="OnConnectTyped"/>
           </StackPanel>
 
-          <TextBlock Text="Ajustes" FontSize="16" FontWeight="SemiBold" Margin="0,12,0,0"/>
-          <TextBlock Text="Relay Lumen (para cruzar CGNAT sin instalar nada). Formato: host:puerto:secreto. Vacío = no usar relay. Ej.: relay.midominio.com:47991:secreto" Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
-          <TextBox Watermark="relay Lumen (host:puerto:secreto)" Text="{Binding RelayServer}" Width="360"/>
+          <Border Background="{StaticResource Card}" CornerRadius="14" Padding="16" Margin="0,8,0,0">
+            <StackPanel Spacing="10">
+              <Button Classes="ghost" Content="{Binding AdvancedLabel}" Click="OnToggleAdvanced"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                      FontSize="16" FontWeight="SemiBold"/>
+              <Panel IsVisible="{Binding ShowAdvanced}">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="Relay Lumen (para cruzar CGNAT sin instalar nada). Formato: host:puerto:secreto. Vacío = no usar relay. Ej.: relay.midominio.com:47991:secreto" Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
+                  <TextBox Watermark="relay Lumen (host:puerto:secreto)" Text="{Binding RelayServer}" HorizontalAlignment="Stretch"/>
+                </StackPanel>
+              </Panel>
+            </StackPanel>
+          </Border>
         </StackPanel>
       </ScrollViewer>
     </DockPanel>

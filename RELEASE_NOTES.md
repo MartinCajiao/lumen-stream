@@ -1,5 +1,13 @@
 # Release notes
 
+## Lumen Stream v0.4.4 (2026-09-07)
+
+### UI: el relay ahora está donde lo necesitas
+
+- **El campo del relay va dentro de la tarjeta de "doble NAT"**. Antes estaba al final de todo, después de la lista de PCs, y no llegabas sin hacer mucho scroll. Ahora, cuando Lumen detecta doble NAT, la tarjeta te muestra el campo del relay ahí mismo — pégalo, comparte otra vez y el código cambia a `relay:…`.
+- **Ajustes plegables**. La sección de Ajustes del final ahora es un botón "Ajustes ▼" que se abre y se cierra, para que no ocupe de más.
+- Texto reordenado: el relay Lumen es la salida **sin instalar nada**; Tailscale queda como alternativa.
+
 ## Lumen Stream v0.4.3 (2026-09-07)
 
 ### Conectar ahora empareja Y streamea solo — sin PIN
