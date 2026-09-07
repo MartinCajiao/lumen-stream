@@ -75,6 +75,20 @@
             </StackPanel>
           </Border>
 
+          <Border Background="{StaticResource Card}" CornerRadius="14" Padding="16" Margin="0,4,0,0">
+            <StackPanel Spacing="10">
+              <Button Classes="ghost" Content="{Binding AdvancedLabel}" Click="OnToggleAdvanced"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                      FontSize="16" FontWeight="SemiBold"/>
+              <Panel IsVisible="{Binding ShowAdvanced}">
+                <StackPanel Spacing="8">
+                  <TextBlock Text="Relay Lumen (para cruzar CGNAT sin instalar nada). Formato: host:puerto:secreto. Vacío = no usar relay. Ej.: relay.midominio.com:47991:secreto" Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
+                  <TextBox Watermark="relay Lumen (host:puerto:secreto)" Text="{Binding RelayServer}" HorizontalAlignment="Stretch"/>
+                </StackPanel>
+              </Panel>
+            </StackPanel>
+          </Border>
+
           <TextBlock Text="Otros PCs" FontSize="18" FontWeight="SemiBold" Margin="0,8,0,0"/>
 
           <ItemsControl ItemsSource="{Binding Computers}">
@@ -106,20 +120,6 @@
             <Button Classes="purple" Content="Añadir" Click="OnAddRemote"/>
             <Button Classes="pink" Content="Conectar" Click="OnConnectTyped"/>
           </StackPanel>
-
-          <Border Background="{StaticResource Card}" CornerRadius="14" Padding="16" Margin="0,8,0,0">
-            <StackPanel Spacing="10">
-              <Button Classes="ghost" Content="{Binding AdvancedLabel}" Click="OnToggleAdvanced"
-                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                      FontSize="16" FontWeight="SemiBold"/>
-              <Panel IsVisible="{Binding ShowAdvanced}">
-                <StackPanel Spacing="8">
-                  <TextBlock Text="Relay Lumen (para cruzar CGNAT sin instalar nada). Formato: host:puerto:secreto. Vacío = no usar relay. Ej.: relay.midominio.com:47991:secreto" Foreground="{StaticResource Muted}" TextWrapping="Wrap"/>
-                  <TextBox Watermark="relay Lumen (host:puerto:secreto)" Text="{Binding RelayServer}" HorizontalAlignment="Stretch"/>
-                </StackPanel>
-              </Panel>
-            </StackPanel>
-          </Border>
         </StackPanel>
       </ScrollViewer>
     </DockPanel>

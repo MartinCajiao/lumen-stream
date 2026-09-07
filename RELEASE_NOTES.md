@@ -1,5 +1,12 @@
 # Release notes
 
+## Lumen Stream v0.4.5 (2026-09-07)
+
+### UI: Ajustes siempre al alcance
+
+- **La sección Ajustes (con el relay) ahora va JUSTO DESPUÉS de la tarjeta de doble NAT, antes de la lista de PCs.** Ya no tienes que scrollear toda la lista para llegar al relay. Siempre está arriba, a la vista.
+- Sigue siendo plegable (botón "Ajustes ▼/▲") para no estorbar cuando no lo usas.
+
 ## Lumen Stream v0.4.4 (2026-09-07)
 
 ### UI: el relay ahora está donde lo necesitas
