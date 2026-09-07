@@ -50,19 +50,7 @@ public static class SessionLauncher
         bool pairOnly = false)
     {
         ClientSettingsApplier.Apply(profile);
-        string args;
-        if (string.IsNullOrWhiteSpace(hostAddress))
-        {
-            args = "";
-        }
-        else if (pairOnly)
-        {
-            args = $"pair {MoonlightHost(hostAddress)}";
-        }
-        else
-        {
-            args = $"stream {MoonlightHost(hostAddress)} Desktop";
-        }
+        var args = ClientArgs(hostAddress, pairOnly);
 
         var start = new ProcessStartInfo
         {
@@ -72,6 +60,29 @@ public static class SessionLauncher
             WorkingDirectory = Path.GetDirectoryName(binary.Path) ?? Environment.CurrentDirectory
         };
         return Process.Start(start) ?? throw new InvalidOperationException("No se pudo arrancar el cliente.");
+    }
+
+    /// <summary>
+    /// Builds the Moonlight CLI args for a client session. Exposed so the auto-pair
+    /// flow (fixed Lumen PIN) can be unit-tested without launching Moonlight.
+    /// </summary>
+    public static string ClientArgs(string? hostAddress, bool pairOnly)
+    {
+        if (string.IsNullOrWhiteSpace(hostAddress))
+        {
+            return "";
+        }
+
+        if (pairOnly)
+        {
+            // Lumen auto-pair: send the fixed PIN so the host (also running Lumen)
+            // auto-approves it via PairingClient.AutoApproveLoopAsync. No one types
+            // a PIN. For a non-Lumen host this PIN just won't match and the caller
+            // falls back to the manual PIN flow.
+            return $"pair {MoonlightHost(hostAddress)} --pin {PairingClient.LumenAutoPin}";
+        }
+
+        return $"stream {MoonlightHost(hostAddress)} Desktop";
     }
 
     private static async Task<Process?> TryStartOnceAsync(

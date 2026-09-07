@@ -44,6 +44,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private bool _tailscaleBusy;
     private RelayHostClient? _relayHost;
     private RelayClientTunnel? _relayTunnel;
+    private CancellationTokenSource? _autoPairCts;
     private bool _showShareOptions;
     private bool _isInstalling;
     private bool _showAdvanced;
@@ -523,14 +524,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
 
         var pairFirst = pc is null;
-        var pairingUnknown = false;
         if (pc is not null)
         {
             var paired = await MoonlightPairingProbe.IsPairedAsync(host, port, CancellationToken.None)
                 .ConfigureAwait(true);
             if (paired is null)
             {
-                pairingUnknown = true;
                 pairFirst = !pc.ReadyToStream;
             }
             else
@@ -541,21 +540,70 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         try
         {
-            SessionLauncher.StartClient(CurrentProfile, client, host, pairOnly: pairFirst);
-            if (pairingUnknown && pc is not null)
+            if (!pairFirst)
             {
-                pc.ReadyToStream = true;
-                KnownComputerStore.Save(known);
+                // Already paired: stream straight in. One press, done.
+                SessionLauncher.StartClient(CurrentProfile, client, host, pairOnly: false);
+                Status = $"Entrando a {title}…";
+                return;
             }
 
-            Status = pairFirst
-                ? "En Moonlight sale un PIN. Escríbelo en el PC gamer (el que pulsó Compartir) y pulsa Listo. Luego aquí pulsa Conectar otra vez."
-                : $"Entrando a {title}…";
+            // Not paired yet: launch pair with the fixed Lumen PIN. If the host is
+            // also running Lumen it auto-approves 1234 and we stream automatically —
+            // no PIN on screen, no second press. If pairing doesn't complete in 15s
+            // (non-Lumen host, or host not sharing), fall back to the manual PIN.
+            Status = "Emparejando con el PC gamer…";
+            SessionLauncher.StartClient(CurrentProfile, client, host, pairOnly: true);
+            var pairedNow = await WaitForPairingAsync(host, port, TimeSpan.FromSeconds(15)).ConfigureAwait(true);
+            if (pairedNow)
+            {
+                if (pc is not null)
+                {
+                    pc.ReadyToStream = true;
+                    KnownComputerStore.Save(known);
+                }
+
+                SessionLauncher.StartClient(CurrentProfile, client, host, pairOnly: false);
+                Status = $"Entrando a {title}…";
+            }
+            else
+            {
+                Status = "No emparejó solo. En el PC gamer abre Apollo en el navegador (https://localhost:47990), pega el PIN que sale en Moonlight aquí abajo y pulsa Listo. Luego Conectar otra vez.";
+            }
         }
         catch (Exception ex)
         {
             Status = ex.Message;
         }
+    }
+
+    /// <summary>
+    /// Polls the host's serverinfo with this Moonlight's client certificate until it
+    /// reports PairStatus=1, or gives up after <paramref name="timeout"/>. Used to
+    /// auto-stream once the host auto-approves the Lumen PIN.
+    /// </summary>
+    private async Task<bool> WaitForPairingAsync(string host, int port, TimeSpan timeout)
+    {
+        using var cts = new CancellationTokenSource(timeout);
+        while (!cts.IsCancellationRequested)
+        {
+            var paired = await MoonlightPairingProbe.IsPairedAsync(host, port, cts.Token).ConfigureAwait(true);
+            if (paired == true)
+            {
+                return true;
+            }
+
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1.5), cts.Token).ConfigureAwait(true);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -601,10 +649,26 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 .ConfigureAwait(true);
             var pairFirst = paired is null || !paired.Value;
 
-            SessionLauncher.StartClient(CurrentProfile, client, "127.0.0.1", pairOnly: pairFirst);
-            Status = pairFirst
-                ? "En Moonlight sale un PIN. Escríbelo en el PC gamer (el que pulsó Compartir) y pulsa Listo. Luego aquí pulsa Conectar otra vez."
-                : $"Entrando a {title} (por relay)…";
+            if (!pairFirst)
+            {
+                SessionLauncher.StartClient(CurrentProfile, client, "127.0.0.1", pairOnly: false);
+                Status = $"Entrando a {title} (por relay)…";
+                return;
+            }
+
+            // Auto-pair through the tunnel with the fixed Lumen PIN, then stream.
+            Status = "Emparejando por el relay Lumen…";
+            SessionLauncher.StartClient(CurrentProfile, client, "127.0.0.1", pairOnly: true);
+            var pairedNow = await WaitForPairingAsync("127.0.0.1", tcpControl, TimeSpan.FromSeconds(20)).ConfigureAwait(true);
+            if (pairedNow)
+            {
+                SessionLauncher.StartClient(CurrentProfile, client, "127.0.0.1", pairOnly: false);
+                Status = $"Entrando a {title} (por relay)…";
+            }
+            else
+            {
+                Status = "No emparejó solo por el relay. Pega el PIN que sale en Moonlight en el PC gamer (Apollo → https://localhost:47990) y pulsa Listo. Luego Conectar otra vez.";
+            }
         }
         catch (Exception ex)
         {
@@ -681,6 +745,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             }
 
             BeginAnnounce();
+            StartAutoPairWatcher();
             var wan = await WanBootstrap.OpenAsync(HostBinary.Path, CurrentProfile.Wan.HostPort, CancellationToken.None)
                 .ConfigureAwait(true);
             if (epoch != _shareEpoch)
@@ -793,12 +858,41 @@ public sealed class MainViewModel : INotifyPropertyChanged
         _shareCode = "";
         _wanMethod = "Esta wifi";
         _announceCts?.Cancel();
+        _autoPairCts?.Cancel();
+        _autoPairCts = null;
         _relayHost?.Dispose();
         _relayHost = null;
         HostProcess.StopAll();
         _hostProcess = null;
         Status = "Ya no se comparte este PC.";
         NotifyShare();
+    }
+
+    /// <summary>
+    /// While this PC is sharing, auto-approve the fixed Lumen PIN so any other
+    /// Lumen PC that hits Conectar pairs with zero friction — no one types a PIN.
+    /// </summary>
+    private void StartAutoPairWatcher()
+    {
+        _autoPairCts?.Cancel();
+        _autoPairCts = new CancellationTokenSource();
+        var token = _autoPairCts.Token;
+        var user = _settings.Username;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(3), token).ConfigureAwait(true);
+                await PairingClient.AutoApproveLoopAsync(user, token).ConfigureAwait(true);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (Exception)
+            {
+                // Best-effort: pairing can still be done manually with the PIN field.
+            }
+        }, token);
     }
 
     public async Task PairAsync()

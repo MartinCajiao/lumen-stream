@@ -1,5 +1,20 @@
 # Release notes
 
+## Lumen Stream v0.4.3 (2026-09-07)
+
+### Conectar ahora empareja Y streamea solo — sin PIN
+
+- **Auto-emparejamiento**. Antes, al pulsar Conectar salía el rollo del PIN (lo ves en Moonlight, lo escribes en el otro PC, vuelves a pulsar). Ahora, si las dos PCs tienen Lumen, el host **auto-aprueba** el PIN fijo `1234` mientras comparte, y el cliente lo manda con `moonlight pair --pin 1234`. Lumen sondea, ve que emparejó, y **lanza el stream él solo**. Un botón y ya estás dentro.
+- Si el host no es Lumen (Sunshine puro) o no está compartiendo, a los 15s cae al flujo manual del PIN (sigue funcionando).
+- El host arranca un watcher en segundo plano que aprueba el PIN `1234` mientras comparte; se apaga al dejar de compartir.
+- Nota honesta: en tu propia wifi esto es seguro (tú eres el dueño). En una wifi pública, cualquiera que adivine `1234` podría emparejar — no compartas en redes ajenas.
+
+### Apollo + Moonlight ya vienen DENTRO de Lumen.exe (de v0.4.2)
+- `Lumen.exe` lleva Apollo y Moonlight embebidos (133 MB). No se descargan la primera vez. Un solo archivo.
+
+### Tests
+- 76 tests pasando (nuevos: auto-pair args, PIN fijo, IPv6 entre corchetes).
+
 ## Lumen Stream v0.4.2 (2026-09-07)
 
 ### Apollo + Moonlight ya vienen DENTRO de Lumen.exe
