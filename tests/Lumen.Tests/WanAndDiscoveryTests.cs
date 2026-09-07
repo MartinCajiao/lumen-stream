@@ -65,23 +65,39 @@ public sealed class WanAndDiscoveryTests
     [Fact]
     public void Share_address_prefers_public_ip_over_lan()
     {
-        var picked = WanBootstrap.PickShareAddress(null, "203.0.113.8", null, "192.168.1.4", routerOpened: true);
+        var picked = WanBootstrap.PickShareAddress(null, "203.0.113.8", null, "192.168.1.4", routerOpened: true, nat: NatKind.Open);
         Assert.Equal("203.0.113.8", picked);
-        Assert.Equal("100.64.1.2", WanBootstrap.PickShareAddress("100.64.1.2", "203.0.113.8", null, "192.168.1.4", true));
+        Assert.Equal("100.64.1.2", WanBootstrap.PickShareAddress("100.64.1.2", "203.0.113.8", null, "192.168.1.4", true, NatKind.Open));
+    }
+
+    [Fact]
+    public void Ipv6_is_shared_without_upnp()
+    {
+        var picked = WanBootstrap.PickShareAddress(null, "203.0.113.8", "2606:4700::1", "192.168.1.4", routerOpened: false, nat: NatKind.Cgnat);
+        Assert.Equal("2606:4700::1", picked);
+        Assert.Equal("IPv6", WanBootstrap.Describe(picked, null, false, NatKind.Cgnat));
+    }
+
+    [Fact]
+    public void Cgnat_falls_back_to_lan_code()
+    {
+        var picked = WanBootstrap.PickShareAddress(null, "203.0.113.8", null, "192.168.1.4", routerOpened: true, nat: NatKind.Cgnat);
+        Assert.Equal("192.168.1.4", picked);
+        Assert.Equal("Esta wifi", WanBootstrap.Describe(picked, null, true, NatKind.Cgnat));
     }
 
     [Fact]
     public void Without_upnp_share_code_keeps_public_ip_with_honest_warning()
     {
-        var picked = WanBootstrap.PickShareAddress(null, "203.0.113.8", null, "192.168.1.4", routerOpened: false);
+        var picked = WanBootstrap.PickShareAddress(null, "203.0.113.8", null, "192.168.1.4", routerOpened: false, nat: NatKind.Open);
         Assert.Equal("203.0.113.8", picked);
-        Assert.Equal("Internet (prueba)", WanBootstrap.Describe(picked, null, false));
+        Assert.Equal("Internet (prueba)", WanBootstrap.Describe(picked, null, false, NatKind.Open));
         Assert.Contains("Tailscale", WanBootstrap.ShareHint("Internet (prueba)"));
         Assert.Contains("UPnP", WanBootstrap.ShareHint("Internet (prueba)"));
 
-        var lan = WanBootstrap.PickShareAddress(null, null, null, "192.168.1.4", routerOpened: false);
+        var lan = WanBootstrap.PickShareAddress(null, null, null, "192.168.1.4", routerOpened: false, nat: NatKind.Unknown);
         Assert.Equal("192.168.1.4", lan);
-        Assert.Equal("Esta wifi", WanBootstrap.Describe(lan, null, false));
+        Assert.Equal("Esta wifi", WanBootstrap.Describe(lan, null, false, NatKind.Unknown));
     }
 
     [Fact]

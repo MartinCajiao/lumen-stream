@@ -14,14 +14,22 @@ public static class HostProbe
             return "No hay código. En el PC gamer pulsa Compartir y cópialo.";
         }
 
-        if (NetworkAddresses.IsTailscaleIpv4(address))
+        if (System.Net.IPAddress.TryParse(address, out var ip))
         {
-            return "Ese código es Tailscale (100.x). En ESTE PC también tiene que estar Tailscale instalado y con la misma cuenta.";
-        }
+            if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6)
+            {
+                return "Ese código es IPv6 (va sin instalar nada) pero no llega. Puede que este internet no tenga IPv6, o que el PC gamer tenga el firewall bloqueando el puerto 47989. Comprueba que el otro PC siga compartiendo.";
+            }
 
-        if (NetworkAddresses.IsPrivateIpv4(address))
-        {
-            return "Esa IP es de la wifi de la otra casa. Desde otra red no existe. Instala Tailscale (gratis) en las dos PCs, vuelve a compartir, y usa el código 100.x.";
+            if (NetworkAddresses.IsTailscaleIpv4(address))
+            {
+                return "Ese código es Tailscale (100.x). En ESTE PC también tiene que estar Tailscale instalado y con la misma cuenta.";
+            }
+
+            if (NetworkAddresses.IsPrivateIpv4(address))
+            {
+                return "Esa IP es de la wifi de la otra casa. Desde otra red no existe. Instala Tailscale (gratis) en las dos PCs, vuelve a compartir, y usa el código 100.x.";
+            }
         }
 
         return "No llega al PC gamer. El router no abrió puertos o tu internet es CGNAT. Lo que sí funciona entre dos casas: Tailscale en las dos PCs.";

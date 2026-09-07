@@ -13,6 +13,7 @@ using Lumen.Core.Quality;
 using Lumen.Core.Runtime;
 using Lumen.Core.Settings;
 using Lumen.Core.Wan;
+using Lumen.Core.Wan.Relay;
 
 namespace Lumen.Launcher;
 
@@ -41,6 +42,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private bool _pairingBusy;
     private bool _showTailscaleHelp;
     private bool _tailscaleBusy;
+    private RelayHostClient? _relayHost;
+    private RelayClientTunnel? _relayTunnel;
     private bool _showShareOptions;
     private bool _isInstalling;
     private bool _showAdvanced;
@@ -157,6 +160,23 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         get => _remoteAddress;
         set => Set(ref _remoteAddress, value);
+    }
+
+    public string RelayServer
+    {
+        get => _settings.Wan.RelayServer;
+        set
+        {
+            var trimmed = (value ?? "").Trim();
+            if (trimmed == _settings.Wan.RelayServer)
+            {
+                return;
+            }
+
+            _settings.Wan = _settings.Wan with { RelayServer = trimmed };
+            LumenSettingsStore.Save(_settings);
+            OnPropertyChanged(nameof(RelayServer));
+        }
     }
 
     public string LocalIp => NetworkAddresses.LocalIpv4() ?? "esta red";
@@ -459,6 +479,16 @@ public sealed class MainViewModel : INotifyPropertyChanged
             return;
         }
 
+        // A relay code (relay:123456@host:47991) means the host is behind CGNAT and
+        // we reach it through a Lumen relay. We open a local tunnel and point
+        // Moonlight at 127.0.0.1 — no overlay app, no inbound port needed here.
+        var relayCode = RelayCode.TryParse(host);
+        if (relayCode is not null)
+        {
+            await ConnectViaRelayAsync(relayCode, title).ConfigureAwait(true);
+            return;
+        }
+
         Status = "Llamando al otro PC…";
         var known = KnownComputerStore.Load();
         var pc = known.FirstOrDefault(k => k.Address == host);
@@ -520,10 +550,70 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
     }
 
+    /// <summary>
+    /// Connects to a host that published a relay code. Opens a local tunnel for every
+    /// GameStream port and points Moonlight at 127.0.0.1. Pairing (PIN) and the video
+    /// stream both go through the tunnel, so this works from another house even when
+    /// both ISPs use CGNAT — no Tailscale, no inbound port on either PC.
+    /// </summary>
+    private async Task ConnectViaRelayAsync(RelayCode code, string title)
+    {
+        if (!await EnsureReadyAsync(needHost: false, needClient: true).ConfigureAwait(true))
+        {
+            return;
+        }
+
+        ApplyConfigsQuiet();
+        var client = ProcessLocator.FindClient();
+        if (client is null)
+        {
+            Status = "Falta el programa para entrar. Espera un momento y pulsa Conectar otra vez.";
+            return;
+        }
+
+        Status = "Conectando con el relay Lumen…";
+        try
+        {
+            _relayTunnel?.Dispose();
+            _relayTunnel = new RelayClientTunnel(code.Relay.Host, code.Relay.Port, code.Code);
+            await _relayTunnel.StartAsync(CancellationToken.None).ConfigureAwait(true);
+
+            // Tunnel every GameStream port to a local loopback port. Moonlight talks
+            // to 127.0.0.1 and the relay carries it to the host's Apollo behind CGNAT.
+            var tcpControl = _relayTunnel.ListenFor(47989);
+            _relayTunnel.ListenFor(47984);
+            _relayTunnel.ListenFor(47990);
+            _relayTunnel.ListenForUdp(47998);
+            _relayTunnel.ListenForUdp(47999);
+            _relayTunnel.ListenForUdp(48000);
+            _relayTunnel.ListenForUdp(48010);
+
+            // Check pairing through the tunnel (127.0.0.1:tcpControl -> host 47989).
+            var paired = await MoonlightPairingProbe.IsPairedAsync("127.0.0.1", tcpControl, CancellationToken.None)
+                .ConfigureAwait(true);
+            var pairFirst = paired is null || !paired.Value;
+
+            SessionLauncher.StartClient(CurrentProfile, client, "127.0.0.1", pairOnly: pairFirst);
+            Status = pairFirst
+                ? "En Moonlight sale un PIN. Escríbelo en el PC gamer (el que pulsó Compartir) y pulsa Listo. Luego aquí pulsa Conectar otra vez."
+                : $"Entrando a {title} (por relay)…";
+        }
+        catch (Exception ex)
+        {
+            Status = $"No se pudo cruzar el relay: {ex.Message}. Vuelve a compartir en el PC gamer y copia el código nuevo.";
+        }
+    }
+
     private (string Host, int Port) ParseRemote(string raw)
     {
         var host = raw.Trim();
         var port = CurrentProfile.Wan.HostPort;
+        // A relay code (relay:123456@host:47991) is opaque: do not split it on ':'.
+        if (RelayCode.IsRelayCode(host))
+        {
+            return (host, port);
+        }
+
         if (host.Contains(':', StringComparison.Ordinal) && !host.StartsWith('[') && !IPAddress.TryParse(host, out _))
         {
             var parts = host.Split(':', 2);
@@ -599,23 +689,43 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 _publicIp = wan.PublicIpv4;
             }
 
-            var natBlocked = false;
-            if (wan.Method != "Tailscale")
+            // OpenAsync already classified the NAT. If the chosen code is the LAN
+            // one (CGNAT/double NAT), try the autonomous relay first (no overlay app),
+            // then fall back to the Tailscale card if no relay is configured.
+            var natBlocked = wan.Method == "Esta wifi"
+                && !string.IsNullOrWhiteSpace(wan.PublicIpv4)
+                && !NetworkAddresses.IsPrivateIpv4(wan.PublicIpv4);
+            if (natBlocked)
             {
-                Status = "Mirando si tu internet deja entrar…";
-                var nat = await NatProbe.DetectAsync(wan.PublicIpv4, CancellationToken.None).ConfigureAwait(true);
-                if (epoch != _shareEpoch)
+                var relay = RelayEndpoint.TryParse(_settings.Wan.RelayServer);
+                if (relay is not null)
                 {
-                    HostProcess.StopAll();
-                    _hostProcess = null;
-                    return;
+                    Status = "Tu internet tiene doble NAT. Conectando con el relay Lumen (sin instalar nada)…";
+                    try
+                    {
+                        _relayHost?.Dispose();
+                        _relayHost = new RelayHostClient(relay.Host, relay.Port, relay.Secret);
+                        var relayCode = await _relayHost.ConnectAsync(CancellationToken.None).ConfigureAwait(true);
+                        if (epoch != _shareEpoch)
+                        {
+                            _relayHost.Dispose();
+                            _relayHost = null;
+                            return;
+                        }
+
+                        _shareCode = new RelayCode(relayCode, relay).ToString();
+                        _wanMethod = "Relay";
+                        natBlocked = false;
+                        Status = $"Listo para otra casa. Código: {_shareCode}. Va por el relay Lumen: no installs nada, cruza CGNAT.";
+                    }
+                    catch (Exception ex)
+                    {
+                        Status = $"El relay no conectó: {ex.Message}. Configúralo en Ajustes (relay = host:puerto:secreto).";
+                    }
                 }
 
-                if (NatProbe.BlocksInternet(nat))
+                if (natBlocked)
                 {
-                    natBlocked = true;
-                    _shareCode = NetworkAddresses.LocalIpv4() ?? wan.Address;
-                    _wanMethod = "Esta wifi";
                     ShowTailscaleHelp = !TailscaleHelper.IsConnected;
                 }
             }
@@ -623,9 +733,14 @@ public sealed class MainViewModel : INotifyPropertyChanged
             _ = RefreshPublicIpAsync();
             _shareOn = true;
             _relaunchs = 0;
-            Status = natBlocked
-                ? $"Listo en esta wifi. Código: {_shareCode}. Para la casa de tu tía hace falta Tailscale: tu internet tiene doble NAT y el código público nunca entra."
-                : $"{(wan.Method == "Esta wifi" ? "Listo en esta wifi" : "Listo")}. Código: {wan.Address}. {WanBootstrap.ShareHint(wan.Method)}";
+            if (natBlocked)
+            {
+                Status = $"Listo en esta wifi. Código: {_shareCode}. Para la casa de tu tía: pon un relay Lumen en Ajustes, o instala Tailscale en las dos PCs. Tu internet tiene doble NAT y el código público nunca entra.";
+            }
+            else if (_wanMethod != "Relay")
+            {
+                Status = $"{(wan.Method == "Esta wifi" ? "Listo en esta wifi" : "Listo")}. Código: {wan.Address}. {WanBootstrap.ShareHint(wan.Method)}";
+            }
             if (!wan.FirewallOk)
             {
                 Status += " Aviso: Windows no dejó abrir el firewall (necesita permisos de administrador). Si nadie entra, cierra Lumen, ábrelo como administrador y comparte otra vez.";
@@ -670,6 +785,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
         _shareCode = "";
         _wanMethod = "Esta wifi";
         _announceCts?.Cancel();
+        _relayHost?.Dispose();
+        _relayHost = null;
         HostProcess.StopAll();
         _hostProcess = null;
         Status = "Ya no se comparte este PC.";

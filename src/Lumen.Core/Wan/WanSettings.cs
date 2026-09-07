@@ -11,6 +11,8 @@ public sealed record WanSettings
     public string ExternalIp { get; init; } = "";
     public bool PreferTailscale { get; init; } = true;
     public int HostPort { get; init; } = 47989;
+    /// <summary>Lumen self-hosted relay, format "host:port:secret". Empty = no relay.</summary>
+    public string RelayServer { get; init; } = "";
 
     public static WanSettings Disabled { get; } = new();
 
