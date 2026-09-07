@@ -1,5 +1,16 @@
 # Release notes
 
+## Lumen Stream v0.4.2 (2026-09-07)
+
+### Apollo + Moonlight ya vienen DENTRO de Lumen.exe
+
+- **Un solo archivo, todo integrado.** `Lumen.exe` ahora lleva Apollo y Moonlight embebidos (133 MB). Ya no se descargan la primera vez: abres Lumen y ya. El usuario no instala Apollo ni Moonlight a mano, ni los ve — van dentro.
+- Al primer Compartir, Lumen extrae Apollo y Moonlight en segundo plano a `%AppData%\LumenStream\deps`. Moonlight no pide permiso. Apollo pide **un** aviso de Windows (UAC) la primera vez, porque su driver de pantalla virtual lo exige Windows — no es de Lumen, no se puede ocultar.
+- Sigue habiendo dos archivos para el usuario: **`Lumen.exe`** (portable, ya con todo dentro) y **`Lumen-Setup.exe`** (instalador, para quien quiera acceso directo y autocompartir al iniciar sesión).
+
+### Tests
+- 71 tests pasando.
+
 ## Lumen Stream v0.4.1 (2026-09-07)
 
 ### Sin fricción: adiós al login

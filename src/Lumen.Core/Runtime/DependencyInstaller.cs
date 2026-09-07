@@ -64,21 +64,52 @@ public static class DependencyInstaller
 
         if (needHost && !HasHost())
         {
-            progress?.Report(new("Descargando Apollo…"));
-            var apollo = await InstallApolloAsync(token, progress).ConfigureAwait(false);
-            if (apollo is not null && !HasHost())
+            // Try the Apollo installer embedded in the launcher first — no download.
+            var bundledApollo = BundledDeps.LoadEmbedded("ApolloInstaller");
+            if (bundledApollo is not null)
             {
-                return apollo;
+                progress?.Report(new("Preparando Apollo (ya incluido en Lumen)…"));
+                var apollo = await BundledDeps.ExtractAndInstallApolloAsync(bundledApollo, token).ConfigureAwait(false);
+                if (apollo is not null && !HasHost())
+                {
+                    return apollo;
+                }
+            }
+            else
+            {
+                progress?.Report(new("Descargando Apollo…"));
+                var apollo = await InstallApolloAsync(token, progress).ConfigureAwait(false);
+                if (apollo is not null && !HasHost())
+                {
+                    return apollo;
+                }
             }
         }
 
         if (needClient && !HasClient())
         {
-            progress?.Report(new("Descargando Moonlight…"));
-            var moonlight = await InstallMoonlightPortableAsync(token, progress).ConfigureAwait(false);
-            if (moonlight is not null && !HasClient())
+            // Try Moonlight embedded in the launcher first — no download.
+            var bundledMoonlight = BundledDeps.LoadEmbedded("MoonlightPortable");
+            if (bundledMoonlight is not null)
             {
-                return moonlight;
+                progress?.Report(new("Preparando Moonlight (ya incluido en Lumen)…"));
+                using (bundledMoonlight)
+                {
+                    BundledDeps.ExtractMoonlight(bundledMoonlight);
+                }
+                if (!HasClient())
+                {
+                    return "Moonlight se extrajo pero no aparece Moonlight.exe.";
+                }
+            }
+            else
+            {
+                progress?.Report(new("Descargando Moonlight…"));
+                var moonlight = await InstallMoonlightPortableAsync(token, progress).ConfigureAwait(false);
+                if (moonlight is not null && !HasClient())
+                {
+                    return moonlight;
+                }
             }
         }
 

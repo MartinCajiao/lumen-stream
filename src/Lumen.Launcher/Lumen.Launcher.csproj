@@ -18,4 +18,12 @@
   <ItemGroup>
     <ProjectReference Include="..\Lumen.Core\Lumen.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\vendor\Apollo-installer.exe">
+      <LogicalName>ApolloInstaller</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="..\..\vendor\MoonlightPortable-x64.zip">
+      <LogicalName>MoonlightPortable</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
 </Project>
