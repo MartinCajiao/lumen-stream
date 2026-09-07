@@ -94,6 +94,43 @@ public sealed class WanAndDiscoveryTests
     }
 
     [Fact]
+    public void Nat_double_nat_when_router_wan_is_private()
+    {
+        Assert.Equal(NatKind.DoubleNat, NatProbe.Classify("149.50.194.72", "192.168.1.2"));
+        Assert.True(NatProbe.BlocksInternet(NatKind.DoubleNat));
+        Assert.Contains("doble NAT", NatProbe.Explain(NatKind.DoubleNat));
+    }
+
+    [Fact]
+    public void Nat_open_when_router_wan_matches_public_ip()
+    {
+        Assert.Equal(NatKind.Open, NatProbe.Classify("149.50.194.72", "149.50.194.72"));
+        Assert.False(NatProbe.BlocksInternet(NatKind.Open));
+    }
+
+    [Fact]
+    public void Nat_cgnat_when_router_wan_is_public_but_different()
+    {
+        Assert.Equal(NatKind.Cgnat, NatProbe.Classify("149.50.194.72", "201.10.20.30"));
+        Assert.True(NatProbe.BlocksInternet(NatKind.Cgnat));
+    }
+
+    [Fact]
+    public void Nat_unknown_without_router_answer()
+    {
+        Assert.Equal(NatKind.Unknown, NatProbe.Classify("149.50.194.72", null));
+        Assert.False(NatProbe.BlocksInternet(NatKind.Unknown));
+    }
+
+    [Fact]
+    public void Tailscale_detection_does_not_throw()
+    {
+        _ = TailscaleHelper.IsInstalled;
+        _ = TailscaleHelper.IsConnected;
+        _ = TailscaleHelper.FindBinary();
+    }
+
+    [Fact]
     public void Upnp_ssdp_and_soap_are_well_formed()
     {
         var location = UpnpMapper.TryParseSsdpLocation("HTTP/1.1 200 OK\r\nLOCATION: http://192.168.1.1:5000/root.xml\r\n");

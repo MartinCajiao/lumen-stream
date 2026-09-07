@@ -60,6 +60,16 @@
             </StackPanel>
           </Border>
 
+          <Border IsVisible="{Binding ShowTailscaleHelp}" Background="#2A1430" CornerRadius="14" Padding="16" BorderBrush="#FF4DA6" BorderThickness="1">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Desde otra casa no va a entrar (todavía)" FontWeight="SemiBold" Foreground="#FFB3D9" FontSize="18"/>
+              <TextBlock Text="Tu internet tiene doble NAT: el código público no funciona. La salida gratis es Tailscale: instálalo en este PC y en el otro con la misma cuenta. Cuando conecte, el código cambia solo a 100.x y eso sí cruza casas." TextWrapping="Wrap" Foreground="{StaticResource Muted}"/>
+              <Button Classes="pink" Content="{Binding TailscaleButtonLabel}" Click="OnInstallTailscale"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      IsEnabled="{Binding !TailscaleBusy}"/>
+            </StackPanel>
+          </Border>
+
           <TextBlock Text="Otros PCs" FontSize="18" FontWeight="SemiBold" Margin="0,8,0,0"/>
 
           <ItemsControl ItemsSource="{Binding Computers}">

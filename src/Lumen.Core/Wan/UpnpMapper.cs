@@ -81,6 +81,42 @@ public static class UpnpMapper
         return null;
     }
 
+    /// <summary>Asks the router for its WAN IP (GetExternalIPAddress). Null when no UPnP gateway answers.</summary>
+    public static async Task<string?> QueryRouterWanIpAsync(CancellationToken token)
+    {
+        var igd = await FindGatewayAsync(token).ConfigureAwait(false);
+        if (igd is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(4) };
+            using var request = new HttpRequestMessage(HttpMethod.Post, igd.Value.ControlUrl);
+            request.Headers.TryAddWithoutValidation("SOAPAction", $"\"{igd.Value.ServiceType}#GetExternalIPAddress\"");
+            request.Content = new StringContent(
+                $"""
+                <?xml version="1.0"?>
+                <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+                  <s:Body>
+                    <u:GetExternalIPAddress xmlns:u="{igd.Value.ServiceType}"/>
+                  </s:Body>
+                </s:Envelope>
+                """,
+                Encoding.UTF8,
+                "text/xml");
+            using var response = await http.SendAsync(request, token).ConfigureAwait(false);
+            var body = await response.Content.ReadAsStringAsync(token).ConfigureAwait(false);
+            var match = Regex.Match(body, @"<NewExternalIPAddress>([^<]+)</NewExternalIPAddress>", RegexOptions.IgnoreCase);
+            return match.Success ? match.Groups[1].Value.Trim() : null;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
+
     private static async Task<List<string>> DiscoverLocationsAsync(CancellationToken token)
     {
         var found = new List<string>();

@@ -39,6 +39,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private string _shareCode = "";
     private string _wanMethod = "Esta wifi";
     private bool _pairingBusy;
+    private bool _showTailscaleHelp;
+    private bool _tailscaleBusy;
     private bool _showShareOptions;
     private bool _isInstalling;
     private bool _showAdvanced;
@@ -163,6 +165,66 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public string ShareCode => string.IsNullOrWhiteSpace(_shareCode) ? (TailscaleIp ?? LocalIp) : _shareCode;
     public string ShareHelp => WanBootstrap.ShareHint(_wanMethod);
 
+    public bool ShowTailscaleHelp
+    {
+        get => _showTailscaleHelp;
+        set => Set(ref _showTailscaleHelp, value);
+    }
+
+    public bool TailscaleBusy
+    {
+        get => _tailscaleBusy;
+        set
+        {
+            Set(ref _tailscaleBusy, value);
+            OnPropertyChanged(nameof(TailscaleButtonLabel));
+        }
+    }
+
+    public string TailscaleButtonLabel =>
+        _tailscaleBusy
+            ? "Bajando Tailscale…"
+            : TailscaleHelper.IsInstalled
+                ? "Abrir Tailscale"
+                : "Instalar Tailscale (gratis)";
+
+    public async Task InstallTailscaleAsync()
+    {
+        if (_tailscaleBusy)
+        {
+            return;
+        }
+
+        var binary = TailscaleHelper.FindBinary();
+        if (binary is not null && !TailscaleHelper.IsConnected)
+        {
+            var gui = Path.Combine(Path.GetDirectoryName(binary)!, "tailscale-ipn.exe");
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = File.Exists(gui) ? gui : binary,
+                UseShellExecute = true
+            });
+            Status = "Abre Tailscale, entra con tu cuenta y repite en el otro PC. Cuando conecte, el código cambia solo.";
+            return;
+        }
+
+        TailscaleBusy = true;
+        try
+        {
+            var progress = new Progress<string>(m => Status = m);
+            await TailscaleHelper.DownloadAndLaunchInstallerAsync(progress, CancellationToken.None).ConfigureAwait(true);
+            Status = "Instala Tailscale y entra con tu cuenta. Hazlo también en el otro PC (misma cuenta). Cuando conecte, el código cambia solo a 100.x.";
+        }
+        catch (Exception ex)
+        {
+            Status = $"No pude bajar Tailscale: {ex.Message}. Bájalo de tailscale.com en las dos PCs.";
+        }
+        finally
+        {
+            TailscaleBusy = false;
+        }
+    }
+
     public bool ShowAdvanced
     {
         get => _showAdvanced;
@@ -255,6 +317,22 @@ public sealed class MainViewModel : INotifyPropertyChanged
         else if (_shareOn && !_relaunchBusy && !HostProcess.IsLive() && !HostProcess.IsRunning(_hostProcess))
         {
             _ = KeepShareAliveAsync();
+        }
+
+        if (ShowTailscaleHelp && TailscaleHelper.IsConnected)
+        {
+            ShowTailscaleHelp = false;
+            if (_shareOn)
+            {
+                var ts = TailscaleIp;
+                if (!string.IsNullOrWhiteSpace(ts) && _shareCode != ts)
+                {
+                    _shareCode = ts;
+                    _wanMethod = "Tailscale";
+                    Status = $"Tailscale conectó. Nuevo código para otra casa: {ts}";
+                    NotifyShare();
+                }
+            }
         }
 
         OnPropertyChanged(nameof(IsSharing));
@@ -389,6 +467,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
             .ConfigureAwait(true);
         if (!probe.Reachable)
         {
+            if (NetworkAddresses.IsTailscaleIpv4(host) && !TailscaleHelper.IsConnected)
+            {
+                ShowTailscaleHelp = true;
+            }
+
             Status = probe.Message;
             return;
         }
@@ -516,10 +599,33 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 _publicIp = wan.PublicIpv4;
             }
 
+            var natBlocked = false;
+            if (wan.Method != "Tailscale")
+            {
+                Status = "Mirando si tu internet deja entrar…";
+                var nat = await NatProbe.DetectAsync(wan.PublicIpv4, CancellationToken.None).ConfigureAwait(true);
+                if (epoch != _shareEpoch)
+                {
+                    HostProcess.StopAll();
+                    _hostProcess = null;
+                    return;
+                }
+
+                if (NatProbe.BlocksInternet(nat))
+                {
+                    natBlocked = true;
+                    _shareCode = NetworkAddresses.LocalIpv4() ?? wan.Address;
+                    _wanMethod = "Esta wifi";
+                    ShowTailscaleHelp = !TailscaleHelper.IsConnected;
+                }
+            }
+
             _ = RefreshPublicIpAsync();
             _shareOn = true;
             _relaunchs = 0;
-            Status = $"{(wan.Method == "Esta wifi" ? "Listo en esta wifi" : "Listo")}. Código: {wan.Address}. {WanBootstrap.ShareHint(wan.Method)}";
+            Status = natBlocked
+                ? $"Listo en esta wifi. Código: {_shareCode}. Para la casa de tu tía hace falta Tailscale: tu internet tiene doble NAT y el código público nunca entra."
+                : $"{(wan.Method == "Esta wifi" ? "Listo en esta wifi" : "Listo")}. Código: {wan.Address}. {WanBootstrap.ShareHint(wan.Method)}";
             if (!wan.FirewallOk)
             {
                 Status += " Aviso: Windows no dejó abrir el firewall (necesita permisos de administrador). Si nadie entra, cierra Lumen, ábrelo como administrador y comparte otra vez.";
